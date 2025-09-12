@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dark*Light - دردشة مشفرة</title>
+    <title>Dark*Light - دردشة مشفرة آمنة بدون تسجيل</title>
+    <meta name="description" content="موقع دردشة مشفر وآمن بالكامل، لا يحتاج تسجيل دخول أو بريد إلكتروني. دردشة عامة وخاصة مع تشفير محلي وواجهة تيرمنل لينكس">
+    <meta name="keywords" content="دردشة مشفرة, دردشة آمنة, دردشة بدون تسجيل, Dark Light Chat, دردشة عربية, موقع دردشة مجهول, تشفير محلي">
+    <meta name="author" content="Dark*Light Team">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph للمشاركة على وسائل التواصل -->
+    <meta property="og:title" content="Dark*Light - دردشة مشفرة آمنة">
+    <meta property="og:description" content="موقع دردشة مشفر وآمن بالكامل، لا يحتاج تسجيل دخول">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ar_SA">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Dark*Light - دردشة مشفرة آمنة">
+    <meta name="twitter:description" content="موقع دردشة مشفر وآمن بالكامل، لا يحتاج تسجيل دخول">
+    
     <style>
         * {
             margin: 0;
@@ -266,6 +282,54 @@
             text-align: center;
             margin: 10px 0;
         }
+
+        .welcome-section {
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #44ff44;
+        }
+
+        .welcome-description {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .features-list {
+            text-align: right;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .features-list li {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                gap: 8px;
+            }
+            
+            .control-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .header {
+                padding: 8px 15px;
+            }
+            
+            .chat-container {
+                padding: 15px;
+                font-size: 13px;
+            }
+        }
     </style>
 </head>
 <body class="dark-mode">
@@ -281,8 +345,21 @@
     </div>
 
     <div class="chat-container" id="chatContainer">
-        <div class="system-message">مرحباً بك في Dark*Light - دردشة مشفرة وآمنة</div>
+        <div class="welcome-section">
+            <div class="welcome-title">مرحباً بك في Dark*Light</div>
+            <div class="welcome-description">
+                موقع دردشة مشفر وآمن بالكامل - لا يحتاج تسجيل دخول أو بريد إلكتروني
+            </div>
+            <ul class="features-list">
+                <li>🔒 تشفير محلي كامل على جهازك</li>
+                <li>🎭 هوية مجهولة تلقائية</li>
+                <li>💬 دردشة عامة وخاصة</li>
+                <li>🖥️ واجهة تيرمنل لينكس</li>
+                <li>📱 يعمل على جميع الأجهزة</li>
+            </ul>
+        </div>
         <div class="system-message">جميع الرسائل مشفرة محلياً على جهازك</div>
+        <div class="system-message">اكتب رسالتك أدناه للبدء...</div>
     </div>
 
     <div class="input-container">
@@ -324,6 +401,7 @@
                 this.simulateOnlineUsers();
                 this.updateUI();
                 this.startHeartbeat();
+                this.addWelcomeMessage();
             }
 
             generateOrGetUserId() {
@@ -399,13 +477,7 @@
             }
 
             simulateOnlineUsers() {
-                // محاكاة مستخدمين متصلين
-                const sampleUsers = ['KQZ#789', 'AMD#567', 'RTX#234', 'CPU#891', 'GPU#456'];
-                sampleUsers.forEach(user => {
-                    if (user !== this.userId) {
-                        this.onlineUsers.set(user, { lastSeen: Date.now() });
-                    }
-                });
+                // بدء بمستخدم واحد فقط (المستخدم الحالي)
                 this.updateOnlineCount();
             }
 
@@ -417,6 +489,13 @@
             updateUI() {
                 this.elements.userId.textContent = this.userId;
                 this.elements.promptText.textContent = `${this.userId.toLowerCase()}@darklight:~$`;
+            }
+
+            addWelcomeMessage() {
+                setTimeout(() => {
+                    this.addSystemMessage(`تم إنشاء هويتك: ${this.userId}`);
+                    this.addSystemMessage('يمكنك الآن بدء المحادثة!');
+                }, 1000);
             }
 
             showPrivateModal() {
@@ -543,7 +622,6 @@
                 }
 
                 this.addMessage(messageData);
-                this.simulateOtherUserMessages();
                 this.elements.messageInput.value = '';
             }
 
@@ -587,36 +665,8 @@
             }
 
             simulateOtherUserMessages() {
-                // محاكاة رسائل من مستخدمين آخرين
-                setTimeout(() => {
-                    const users = Array.from(this.onlineUsers.keys());
-                    if (users.length === 0) return;
-
-                    const randomUser = users[Math.floor(Math.random() * users.length)];
-                    const messages = [
-                        'مرحباً بالجميع!',
-                        'كيف حالكم اليوم؟',
-                        'هذا الموقع رائع ومشفر',
-                        'أحب واجهة التيرمنل',
-                        'الخصوصية مهمة جداً',
-                        'شكراً لكم على هذا الموقع'
-                    ];
-
-                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-                    const timestamp = new Date().toLocaleTimeString('ar-SA', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-
-                    this.addMessage({
-                        id: Date.now(),
-                        userId: randomUser,
-                        timestamp: timestamp,
-                        content: randomMessage,
-                        isPrivate: false,
-                        recipients: []
-                    });
-                }, Math.random() * 10000 + 5000);
+                // لا توجد رسائل محاكية - الموقع جاهز للاستخدام الحقيقي
+                return;
             }
 
             startHeartbeat() {
@@ -632,6 +682,33 @@
         document.addEventListener('DOMContentLoaded', () => {
             new DarkLightChat();
         });
+
+        // إضافة Schema.org للـ SEO
+        const schema = {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "Dark*Light Chat",
+            "description": "موقع دردشة مشفر وآمن بالكامل، لا يحتاج تسجيل دخول أو بريد إلكتروني",
+            "applicationCategory": "CommunicationApplication",
+            "operatingSystem": "Web Browser",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            },
+            "featureList": [
+                "تشفير محلي كامل",
+                "دردشة بدون تسجيل",
+                "واجهة تيرمنل لينكس",
+                "دردشة عامة وخاصة",
+                "متوافق مع جميع الأجهزة"
+            ]
+        };
+
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(schema);
+        document.head.appendChild(script);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e105770400e229',t:'MTc1NzY5NzA1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e20cb5a3c02cfc',t:'MTc1NzcwNzg0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
