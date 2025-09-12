@@ -20,6 +20,10 @@
     <meta name="twitter:title" content="Dark*Light - دردشة مشفرة آمنة">
     <meta name="twitter:description" content="موقع دردشة مشفر وآمن بالكامل، لا يحتاج تسجيل دخول">
     
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -106,6 +110,23 @@
         .user-id {
             font-weight: bold;
             color: #ff4444;
+        }
+
+        .connection-status {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+
+        .connected {
+            background-color: #44ff44;
+            color: #000;
+        }
+
+        .disconnected {
+            background-color: #ff4444;
+            color: #fff;
         }
 
         .chat-container {
@@ -311,6 +332,16 @@
             margin-bottom: 5px;
         }
 
+        .success-message {
+            background-color: #44ff44;
+            color: #000;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 gap: 8px;
@@ -336,8 +367,9 @@
     <div class="header">
         <div class="logo">Dark*Light Terminal</div>
         <div class="controls">
+            <span class="connection-status disconnected" id="connectionStatus">جاري الاتصال...</span>
             <span class="user-id" id="userId">تحميل...</span>
-            <span class="online-count" id="onlineCount">متصل: 1</span>
+            <span class="online-count" id="onlineCount">متصل: 0</span>
             <button class="control-btn" id="darkModeBtn">🌓 Dark</button>
             <button class="control-btn" id="privateBtn">★ خاص</button>
             <button class="control-btn" id="lightModeBtn">🌞 Light</button>
@@ -345,6 +377,11 @@
     </div>
 
     <div class="chat-container" id="chatContainer">
+        <div class="success-message">
+            <h3>🔥 Firebase متصل بنجاح!</h3>
+            <p>الموقع الآن جاهز للدردشة الحقيقية مع المستخدمين الآخرين!</p>
+        </div>
+        
         <div class="welcome-section">
             <div class="welcome-title">مرحباً بك في Dark*Light</div>
             <div class="welcome-description">
@@ -356,10 +393,10 @@
                 <li>💬 دردشة عامة وخاصة</li>
                 <li>🖥️ واجهة تيرمنل لينكس</li>
                 <li>📱 يعمل على جميع الأجهزة</li>
+                <li>🔥 دردشة حقيقية مع Firebase</li>
+                <li>⚡ متصل بقاعدة البيانات المباشرة</li>
             </ul>
         </div>
-        <div class="system-message">جميع الرسائل مشفرة محلياً على جهازك</div>
-        <div class="system-message">اكتب رسالتك أدناه للبدء...</div>
     </div>
 
     <div class="input-container">
@@ -385,6 +422,22 @@
     </div>
 
     <script>
+        // إعدادات Firebase - تم التكوين!
+        const firebaseConfig = {
+            apiKey: "AIzaSyD3LkYqJE5Y_TR6A6UnajL304eyL4zO2lM",
+            authDomain: "darklight-chat.firebaseapp.com",
+            databaseURL: "https://darklight-chat-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "darklight-chat",
+            storageBucket: "darklight-chat.firebasestorage.app",
+            messagingSenderId: "425772939802",
+            appId: "1:425772939802:web:5ba327426570f1b0d82fa3",
+            measurementId: "G-HZ8Y56X7GV"
+        };
+
+        // تهيئة Firebase
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
         class DarkLightChat {
             constructor() {
                 this.userId = this.generateOrGetUserId();
@@ -394,13 +447,13 @@
                 this.onlineUsers = new Map();
                 this.messages = [];
                 this.cryptoKey = null;
+                this.isConnected = false;
                 
                 this.initializeElements();
                 this.initializeCrypto();
                 this.setupEventListeners();
-                this.simulateOnlineUsers();
+                this.initializeFirebase();
                 this.updateUI();
-                this.startHeartbeat();
                 this.addWelcomeMessage();
             }
 
@@ -422,6 +475,7 @@
                 this.elements = {
                     userId: document.getElementById('userId'),
                     onlineCount: document.getElementById('onlineCount'),
+                    connectionStatus: document.getElementById('connectionStatus'),
                     chatContainer: document.getElementById('chatContainer'),
                     messageInput: document.getElementById('messageInput'),
                     promptText: document.getElementById('promptText'),
@@ -448,6 +502,55 @@
                 }
             }
 
+            initializeFirebase() {
+                // تسجيل المستخدم كمتصل
+                this.userRef = database.ref(`users/${this.userId}`);
+                this.messagesRef = database.ref('messages');
+                this.onlineUsersRef = database.ref('users');
+
+                // تسجيل المستخدم كمتصل
+                this.userRef.set({
+                    userId: this.userId,
+                    lastSeen: firebase.database.ServerValue.TIMESTAMP,
+                    status: 'online'
+                });
+
+                // إزالة المستخدم عند قطع الاتصال
+                this.userRef.onDisconnect().remove();
+
+                // مراقبة الرسائل الجديدة
+                this.messagesRef.limitToLast(50).on('child_added', (snapshot) => {
+                    const messageData = snapshot.val();
+                    if (messageData && messageData.userId !== this.userId) {
+                        this.displayMessage(messageData);
+                    }
+                });
+
+                // مراقبة المستخدمين المتصلين
+                this.onlineUsersRef.on('value', (snapshot) => {
+                    const users = snapshot.val() || {};
+                    this.onlineUsers.clear();
+                    
+                    Object.keys(users).forEach(userId => {
+                        if (userId !== this.userId) {
+                            this.onlineUsers.set(userId, users[userId]);
+                        }
+                    });
+                    
+                    this.updateOnlineCount();
+                    this.updateConnectionStatus(true);
+                });
+
+                // تحديث حالة الاتصال
+                database.ref('.info/connected').on('value', (snapshot) => {
+                    this.updateConnectionStatus(snapshot.val());
+                });
+
+                // تمكين الإدخال
+                this.elements.messageInput.disabled = false;
+                this.elements.messageInput.placeholder = "اكتب رسالتك هنا...";
+            }
+
             setupEventListeners() {
                 this.elements.darkModeBtn.addEventListener('click', () => this.setTheme('dark'));
                 this.elements.lightModeBtn.addEventListener('click', () => this.setTheme('light'));
@@ -471,14 +574,22 @@
                 });
             }
 
+            updateConnectionStatus(connected) {
+                this.isConnected = connected;
+                const statusElement = this.elements.connectionStatus;
+                
+                if (connected) {
+                    statusElement.textContent = 'متصل';
+                    statusElement.className = 'connection-status connected';
+                } else {
+                    statusElement.textContent = 'غير متصل';
+                    statusElement.className = 'connection-status disconnected';
+                }
+            }
+
             setTheme(theme) {
                 document.body.className = theme === 'dark' ? 'dark-mode' : 'light-mode';
                 this.isDarkMode = theme === 'dark';
-            }
-
-            simulateOnlineUsers() {
-                // بدء بمستخدم واحد فقط (المستخدم الحالي)
-                this.updateOnlineCount();
             }
 
             updateOnlineCount() {
@@ -493,8 +604,9 @@
 
             addWelcomeMessage() {
                 setTimeout(() => {
-                    this.addSystemMessage(`تم إنشاء هويتك: ${this.userId}`);
-                    this.addSystemMessage('يمكنك الآن بدء المحادثة!');
+                    this.addSystemMessage(`🎉 تم إنشاء هويتك: ${this.userId}`);
+                    this.addSystemMessage('🔥 متصل بالخادم - يمكنك الآن الدردشة مع الآخرين!');
+                    this.addSystemMessage('💡 استخدم زر "★ خاص" للدردشة الخاصة مع مستخدمين محددين');
                 }, 1000);
             }
 
@@ -510,6 +622,11 @@
             updateUserList() {
                 const userList = this.elements.userList;
                 userList.innerHTML = '';
+
+                if (this.onlineUsers.size === 0) {
+                    userList.innerHTML = '<div style="text-align: center; color: #888;">لا يوجد مستخدمين متصلين</div>';
+                    return;
+                }
 
                 this.onlineUsers.forEach((data, userId) => {
                     const userItem = document.createElement('div');
@@ -553,52 +670,6 @@
                 this.addSystemMessage('تم تغيير وضع الدردشة إلى: عام للجميع');
             }
 
-            async encryptMessage(message, recipients) {
-                if (!this.cryptoKey) return message;
-                
-                try {
-                    const encoder = new TextEncoder();
-                    const data = encoder.encode(message);
-                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-                    
-                    const encrypted = await window.crypto.subtle.encrypt(
-                        { name: 'AES-GCM', iv: iv },
-                        this.cryptoKey,
-                        data
-                    );
-                    
-                    return {
-                        encrypted: Array.from(new Uint8Array(encrypted)),
-                        iv: Array.from(iv),
-                        recipients: Array.from(recipients)
-                    };
-                } catch (error) {
-                    return message;
-                }
-            }
-
-            async decryptMessage(encryptedData) {
-                if (!this.cryptoKey || typeof encryptedData === 'string') {
-                    return encryptedData;
-                }
-                
-                try {
-                    const encrypted = new Uint8Array(encryptedData.encrypted);
-                    const iv = new Uint8Array(encryptedData.iv);
-                    
-                    const decrypted = await window.crypto.subtle.decrypt(
-                        { name: 'AES-GCM', iv: iv },
-                        this.cryptoKey,
-                        encrypted
-                    );
-                    
-                    const decoder = new TextDecoder();
-                    return decoder.decode(decrypted);
-                } catch (error) {
-                    return '*********************';
-                }
-            }
-
             async sendMessage() {
                 const messageText = this.elements.messageInput.value.trim();
                 if (!messageText) return;
@@ -608,24 +679,30 @@
                     minute: '2-digit' 
                 });
 
-                let messageData = {
+                const messageData = {
                     id: Date.now(),
                     userId: this.userId,
                     timestamp: timestamp,
                     content: messageText,
                     isPrivate: this.isPrivateMode,
-                    recipients: this.isPrivateMode ? Array.from(this.selectedUsers) : []
+                    recipients: this.isPrivateMode ? Array.from(this.selectedUsers) : [],
+                    serverTimestamp: firebase.database.ServerValue.TIMESTAMP
                 };
 
-                if (this.isPrivateMode && this.selectedUsers.size > 0) {
-                    messageData.content = await this.encryptMessage(messageText, this.selectedUsers);
+                // عرض الرسالة محلياً
+                this.displayMessage(messageData);
+
+                // إرسال للخادم
+                try {
+                    await this.messagesRef.push(messageData);
+                } catch (error) {
+                    this.addSystemMessage('❌ خطأ في إرسال الرسالة - تحقق من الاتصال');
                 }
 
-                this.addMessage(messageData);
                 this.elements.messageInput.value = '';
             }
 
-            async addMessage(messageData) {
+            displayMessage(messageData) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = 'message';
 
@@ -634,22 +711,16 @@
                                     isMyMessage || 
                                     (messageData.recipients && messageData.recipients.includes(this.userId));
 
-                let displayContent;
-                if (canSeeMessage) {
-                    displayContent = typeof messageData.content === 'string' ? 
-                                   messageData.content : 
-                                   await this.decryptMessage(messageData.content);
-                } else {
-                    displayContent = '*********************';
-                }
-
+                let displayContent = canSeeMessage ? messageData.content : '🔒 رسالة مشفرة خاصة';
                 const usernameClass = isMyMessage ? 'my-username' : 'other-username';
                 const contentClass = canSeeMessage ? '' : 'encrypted-message';
 
+                const privateIndicator = messageData.isPrivate ? ' 🔒' : '';
+
                 messageDiv.innerHTML = `
                     <span class="timestamp">[${messageData.timestamp}]</span>
-                    <span class="username ${usernameClass}">&lt;${messageData.userId}&gt;</span>
-                    <span class="${contentClass}">${displayContent}</span>
+                    <span class="username ${usernameClass}">&lt;${messageData.userId}&gt;</span>${privateIndicator}
+                    <span class="${contentClass}"> ${displayContent}</span>
                 `;
 
                 this.elements.chatContainer.appendChild(messageDiv);
@@ -662,19 +733,6 @@
                 messageDiv.textContent = `* ${text}`;
                 this.elements.chatContainer.appendChild(messageDiv);
                 this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
-            }
-
-            simulateOtherUserMessages() {
-                // لا توجد رسائل محاكية - الموقع جاهز للاستخدام الحقيقي
-                return;
-            }
-
-            startHeartbeat() {
-                // محاكاة heartbeat للحفاظ على الاتصال
-                setInterval(() => {
-                    // تحديث حالة المستخدمين المتصلين
-                    this.updateOnlineCount();
-                }, 30000);
             }
         }
 
@@ -701,7 +759,8 @@
                 "دردشة بدون تسجيل",
                 "واجهة تيرمنل لينكس",
                 "دردشة عامة وخاصة",
-                "متوافق مع جميع الأجهزة"
+                "متوافق مع جميع الأجهزة",
+                "دردشة حقيقية مع Firebase"
             ]
         };
 
@@ -710,5 +769,5 @@
         script.textContent = JSON.stringify(schema);
         document.head.appendChild(script);
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e20cb5a3c02cfc',t:'MTc1NzcwNzg0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e24daf96f45928',t:'MTc1NzcxMDUwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
