@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark*Light - دردشة مشفرة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .light-mode {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid;
+            height: 60px;
+        }
+
+        .dark-mode .header {
+            border-color: #333;
+            background-color: #111;
+        }
+
+        .light-mode .header {
+            border-color: #ddd;
+            background-color: #f5f5f5;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-btn {
+            background: none;
+            border: 1px solid;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .dark-mode .control-btn {
+            color: #fff;
+            border-color: #555;
+        }
+
+        .dark-mode .control-btn:hover {
+            background-color: #333;
+        }
+
+        .light-mode .control-btn {
+            color: #000;
+            border-color: #999;
+        }
+
+        .light-mode .control-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .user-id {
+            font-weight: bold;
+            color: #ff4444;
+        }
+
+        .chat-container {
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .message {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        .timestamp {
+            color: #888;
+        }
+
+        .username {
+            font-weight: bold;
+        }
+
+        .my-username {
+            color: #ff4444;
+        }
+
+        .other-username {
+            color: #44ff44;
+        }
+
+        .encrypted-message {
+            color: #666;
+            font-style: italic;
+        }
+
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            border-top: 1px solid;
+        }
+
+        .dark-mode .input-container {
+            border-color: #333;
+            background-color: #111;
+        }
+
+        .light-mode .input-container {
+            border-color: #ddd;
+            background-color: #f5f5f5;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .prompt {
+            color: #44ff44;
+            font-weight: bold;
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 14px;
+            padding: 5px;
+        }
+
+        .dark-mode .message-input {
+            color: #fff;
+        }
+
+        .light-mode .message-input {
+            color: #000;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .dark-mode .modal-content {
+            background-color: #222;
+            border: 1px solid #555;
+        }
+
+        .light-mode .modal-content {
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .user-list {
+            margin-bottom: 20px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .dark-mode .user-item:hover {
+            background-color: #333;
+        }
+
+        .light-mode .user-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .user-checkbox {
+            margin-left: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: 1px solid;
+            background: none;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+        }
+
+        .online-count {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .system-message {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="header">
+        <div class="logo">Dark*Light Terminal</div>
+        <div class="controls">
+            <span class="user-id" id="userId">تحميل...</span>
+            <span class="online-count" id="onlineCount">متصل: 1</span>
+            <button class="control-btn" id="darkModeBtn">🌓 Dark</button>
+            <button class="control-btn" id="privateBtn">★ خاص</button>
+            <button class="control-btn" id="lightModeBtn">🌞 Light</button>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="system-message">مرحباً بك في Dark*Light - دردشة مشفرة وآمنة</div>
+        <div class="system-message">جميع الرسائل مشفرة محلياً على جهازك</div>
+    </div>
+
+    <div class="input-container">
+        <div class="input-row">
+            <span class="prompt" id="promptText">guest@darklight:~$</span>
+            <input type="text" class="message-input" id="messageInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
+        </div>
+    </div>
+
+    <!-- Modal للاختيار الخاص -->
+    <div class="modal" id="privateModal">
+        <div class="modal-content">
+            <div class="modal-title">اختر من يمكنه رؤية رسائلك</div>
+            <div class="user-list" id="userList">
+                <!-- سيتم ملؤها ديناميكياً -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn" id="applyPrivate">تطبيق</button>
+                <button class="modal-btn" id="cancelPrivate">إلغاء</button>
+                <button class="modal-btn" id="publicMode">عام للجميع</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DarkLightChat {
+            constructor() {
+                this.userId = this.generateOrGetUserId();
+                this.isDarkMode = true;
+                this.isPrivateMode = false;
+                this.selectedUsers = new Set();
+                this.onlineUsers = new Map();
+                this.messages = [];
+                this.cryptoKey = null;
+                
+                this.initializeElements();
+                this.initializeCrypto();
+                this.setupEventListeners();
+                this.simulateOnlineUsers();
+                this.updateUI();
+                this.startHeartbeat();
+            }
+
+            generateOrGetUserId() {
+                let userId = localStorage.getItem('darklight_user_id');
+                if (!userId) {
+                    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    const randomLetters = Array.from({length: 3}, () => 
+                        letters[Math.floor(Math.random() * letters.length)]
+                    ).join('');
+                    const randomNumber = Math.floor(Math.random() * 900) + 100;
+                    userId = `${randomLetters}#${randomNumber}`;
+                    localStorage.setItem('darklight_user_id', userId);
+                }
+                return userId;
+            }
+
+            initializeElements() {
+                this.elements = {
+                    userId: document.getElementById('userId'),
+                    onlineCount: document.getElementById('onlineCount'),
+                    chatContainer: document.getElementById('chatContainer'),
+                    messageInput: document.getElementById('messageInput'),
+                    promptText: document.getElementById('promptText'),
+                    darkModeBtn: document.getElementById('darkModeBtn'),
+                    lightModeBtn: document.getElementById('lightModeBtn'),
+                    privateBtn: document.getElementById('privateBtn'),
+                    privateModal: document.getElementById('privateModal'),
+                    userList: document.getElementById('userList'),
+                    applyPrivate: document.getElementById('applyPrivate'),
+                    cancelPrivate: document.getElementById('cancelPrivate'),
+                    publicMode: document.getElementById('publicMode')
+                };
+            }
+
+            async initializeCrypto() {
+                try {
+                    this.cryptoKey = await window.crypto.subtle.generateKey(
+                        { name: 'AES-GCM', length: 256 },
+                        true,
+                        ['encrypt', 'decrypt']
+                    );
+                } catch (error) {
+                    console.warn('تشفير غير متاح، سيتم استخدام النص العادي');
+                }
+            }
+
+            setupEventListeners() {
+                this.elements.darkModeBtn.addEventListener('click', () => this.setTheme('dark'));
+                this.elements.lightModeBtn.addEventListener('click', () => this.setTheme('light'));
+                this.elements.privateBtn.addEventListener('click', () => this.showPrivateModal());
+                
+                this.elements.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+
+                this.elements.applyPrivate.addEventListener('click', () => this.applyPrivateSettings());
+                this.elements.cancelPrivate.addEventListener('click', () => this.hidePrivateModal());
+                this.elements.publicMode.addEventListener('click', () => this.setPublicMode());
+
+                // إغلاق المودال عند النقر خارجه
+                this.elements.privateModal.addEventListener('click', (e) => {
+                    if (e.target === this.elements.privateModal) {
+                        this.hidePrivateModal();
+                    }
+                });
+            }
+
+            setTheme(theme) {
+                document.body.className = theme === 'dark' ? 'dark-mode' : 'light-mode';
+                this.isDarkMode = theme === 'dark';
+            }
+
+            simulateOnlineUsers() {
+                // محاكاة مستخدمين متصلين
+                const sampleUsers = ['KQZ#789', 'AMD#567', 'RTX#234', 'CPU#891', 'GPU#456'];
+                sampleUsers.forEach(user => {
+                    if (user !== this.userId) {
+                        this.onlineUsers.set(user, { lastSeen: Date.now() });
+                    }
+                });
+                this.updateOnlineCount();
+            }
+
+            updateOnlineCount() {
+                const count = this.onlineUsers.size + 1; // +1 للمستخدم الحالي
+                this.elements.onlineCount.textContent = `متصل: ${count}`;
+            }
+
+            updateUI() {
+                this.elements.userId.textContent = this.userId;
+                this.elements.promptText.textContent = `${this.userId.toLowerCase()}@darklight:~$`;
+            }
+
+            showPrivateModal() {
+                this.updateUserList();
+                this.elements.privateModal.style.display = 'block';
+            }
+
+            hidePrivateModal() {
+                this.elements.privateModal.style.display = 'none';
+            }
+
+            updateUserList() {
+                const userList = this.elements.userList;
+                userList.innerHTML = '';
+
+                this.onlineUsers.forEach((data, userId) => {
+                    const userItem = document.createElement('div');
+                    userItem.className = 'user-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'user-checkbox';
+                    checkbox.checked = this.selectedUsers.has(userId);
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            this.selectedUsers.add(userId);
+                        } else {
+                            this.selectedUsers.delete(userId);
+                        }
+                    });
+
+                    const label = document.createElement('span');
+                    label.textContent = userId;
+                    label.className = 'other-username';
+
+                    userItem.appendChild(checkbox);
+                    userItem.appendChild(label);
+                    userList.appendChild(userItem);
+                });
+            }
+
+            applyPrivateSettings() {
+                this.isPrivateMode = this.selectedUsers.size > 0;
+                this.hidePrivateModal();
+                
+                const modeText = this.isPrivateMode ? 
+                    `خاص (${this.selectedUsers.size} مستخدم)` : 'عام';
+                this.addSystemMessage(`تم تغيير وضع الدردشة إلى: ${modeText}`);
+            }
+
+            setPublicMode() {
+                this.isPrivateMode = false;
+                this.selectedUsers.clear();
+                this.hidePrivateModal();
+                this.addSystemMessage('تم تغيير وضع الدردشة إلى: عام للجميع');
+            }
+
+            async encryptMessage(message, recipients) {
+                if (!this.cryptoKey) return message;
+                
+                try {
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(message);
+                    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+                    
+                    const encrypted = await window.crypto.subtle.encrypt(
+                        { name: 'AES-GCM', iv: iv },
+                        this.cryptoKey,
+                        data
+                    );
+                    
+                    return {
+                        encrypted: Array.from(new Uint8Array(encrypted)),
+                        iv: Array.from(iv),
+                        recipients: Array.from(recipients)
+                    };
+                } catch (error) {
+                    return message;
+                }
+            }
+
+            async decryptMessage(encryptedData) {
+                if (!this.cryptoKey || typeof encryptedData === 'string') {
+                    return encryptedData;
+                }
+                
+                try {
+                    const encrypted = new Uint8Array(encryptedData.encrypted);
+                    const iv = new Uint8Array(encryptedData.iv);
+                    
+                    const decrypted = await window.crypto.subtle.decrypt(
+                        { name: 'AES-GCM', iv: iv },
+                        this.cryptoKey,
+                        encrypted
+                    );
+                    
+                    const decoder = new TextDecoder();
+                    return decoder.decode(decrypted);
+                } catch (error) {
+                    return '*********************';
+                }
+            }
+
+            async sendMessage() {
+                const messageText = this.elements.messageInput.value.trim();
+                if (!messageText) return;
+
+                const timestamp = new Date().toLocaleTimeString('ar-SA', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+
+                let messageData = {
+                    id: Date.now(),
+                    userId: this.userId,
+                    timestamp: timestamp,
+                    content: messageText,
+                    isPrivate: this.isPrivateMode,
+                    recipients: this.isPrivateMode ? Array.from(this.selectedUsers) : []
+                };
+
+                if (this.isPrivateMode && this.selectedUsers.size > 0) {
+                    messageData.content = await this.encryptMessage(messageText, this.selectedUsers);
+                }
+
+                this.addMessage(messageData);
+                this.simulateOtherUserMessages();
+                this.elements.messageInput.value = '';
+            }
+
+            async addMessage(messageData) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+
+                const isMyMessage = messageData.userId === this.userId;
+                const canSeeMessage = !messageData.isPrivate || 
+                                    isMyMessage || 
+                                    (messageData.recipients && messageData.recipients.includes(this.userId));
+
+                let displayContent;
+                if (canSeeMessage) {
+                    displayContent = typeof messageData.content === 'string' ? 
+                                   messageData.content : 
+                                   await this.decryptMessage(messageData.content);
+                } else {
+                    displayContent = '*********************';
+                }
+
+                const usernameClass = isMyMessage ? 'my-username' : 'other-username';
+                const contentClass = canSeeMessage ? '' : 'encrypted-message';
+
+                messageDiv.innerHTML = `
+                    <span class="timestamp">[${messageData.timestamp}]</span>
+                    <span class="username ${usernameClass}">&lt;${messageData.userId}&gt;</span>
+                    <span class="${contentClass}">${displayContent}</span>
+                `;
+
+                this.elements.chatContainer.appendChild(messageDiv);
+                this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
+            }
+
+            addSystemMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'system-message';
+                messageDiv.textContent = `* ${text}`;
+                this.elements.chatContainer.appendChild(messageDiv);
+                this.elements.chatContainer.scrollTop = this.elements.chatContainer.scrollHeight;
+            }
+
+            simulateOtherUserMessages() {
+                // محاكاة رسائل من مستخدمين آخرين
+                setTimeout(() => {
+                    const users = Array.from(this.onlineUsers.keys());
+                    if (users.length === 0) return;
+
+                    const randomUser = users[Math.floor(Math.random() * users.length)];
+                    const messages = [
+                        'مرحباً بالجميع!',
+                        'كيف حالكم اليوم؟',
+                        'هذا الموقع رائع ومشفر',
+                        'أحب واجهة التيرمنل',
+                        'الخصوصية مهمة جداً',
+                        'شكراً لكم على هذا الموقع'
+                    ];
+
+                    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                    const timestamp = new Date().toLocaleTimeString('ar-SA', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+
+                    this.addMessage({
+                        id: Date.now(),
+                        userId: randomUser,
+                        timestamp: timestamp,
+                        content: randomMessage,
+                        isPrivate: false,
+                        recipients: []
+                    });
+                }, Math.random() * 10000 + 5000);
+            }
+
+            startHeartbeat() {
+                // محاكاة heartbeat للحفاظ على الاتصال
+                setInterval(() => {
+                    // تحديث حالة المستخدمين المتصلين
+                    this.updateOnlineCount();
+                }, 30000);
+            }
+        }
+
+        // تشغيل التطبيق
+        document.addEventListener('DOMContentLoaded', () => {
+            new DarkLightChat();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e105770400e229',t:'MTc1NzY5NzA1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
