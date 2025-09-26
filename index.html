@@ -1,232 +1,95 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dark*Light Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Chat</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
 
-<!-- CSS -->
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Courier New',monospace;height:100vh;overflow:hidden;background:#000;color:#fff}
-.header{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid #333;background:#111;height:60px}
-.logo{font-size:18px;font-weight:bold}
-.controls{display:flex;gap:15px;align-items:center}
-.control-btn{background:none;border:1px solid #555;padding:8px 15px;cursor:pointer;font-size:14px;border-radius:4px;color:#fff}
-.control-btn:hover{background:#333}
-.user-id{font-weight:bold;color:#ff4444}
-.connection-status{font-size:10px;padding:2px 6px;border-radius:10px;margin-right:10px}
-.connected{background:#1cda1c;color:#000}
-.disconnected{background:#ff4444;color:#fff}
-.chat-container{height:calc(100vh - 120px);overflow-y:auto;padding:20px;font-size:14px;line-height:1.4;display:none}
-.message{margin-bottom:8px;word-wrap:break-word}
-.timestamp{color:#888}
-.username{font-weight:bold}
-.my-username{color:#ff4444}
-.other-username{color:#44ff44}
-.encrypted-message{color:#666;font-style:italic}
-.input-container{position:fixed;bottom:0;left:0;right:0;padding:20px;border-top:1px solid #333;background:#111;display:none}
-.input-row{display:flex;align-items:center;gap:10px}
-.prompt{color:#44ff44;font-weight:bold}
-.message-input{flex:1;background:transparent;border:none;outline:none;font-size:14px;padding:5px;color:#fff}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000}
-.modal-content{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:30px;border-radius:8px;max-width:400px;width:90%;background:#222;border:1px solid #555;text-align:center}
-.modal-title{font-size:18px;margin-bottom:20px}
-.modal-btn{padding:10px 20px;margin:10px 0;border:1px solid #555;background:none;cursor:pointer;font-size:14px;border-radius:4px;color:#fff;width:100%}
-.modal-btn:hover{background:#333}
-.user-list{margin-bottom:20px}
-.user-item{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px;border-radius:4px;cursor:pointer}
-.user-item:hover{background:#333}
-.user-checkbox{margin-left:10px}
-.system-message{color:#888;font-style:italic;text-align:center;margin:10px 0}
-.success-message{background:#44ff44;color:#000;padding:15px;margin:20px;border-radius:8px;text-align:center;font-weight:bold}
-#loginForm input{width:100%;margin:5px 0;padding:8px;border:none;border-radius:4px}
-.gif-btn{background:none;border:1px solid #555;padding:8px 12px;cursor:pointer;border-radius:4px;color:#fff}
-.gif-btn:hover{background:#333}
-.gif-modal-content{max-height:80vh;overflow-y:auto;position:relative}
-.gif-search{width:100%;padding:8px;margin-bottom:10px;border:none;border-radius:4px}
-.gif-results img{max-width:100%;margin:5px 0;cursor:pointer;border-radius:6px;transition:transform 0.2s}
-.gif-results img:hover{transform:scale(1.05)}
-.gif-close-btn {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 18px;
-  color: #fff;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-}
-.gif-close-btn:hover { color:#ff4444; }
-</style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            border-radius: 15px;
+            background-color: #1e1e1e;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2a2a2a;
+        }
+
+        h1 {
+            color: #00ff9d;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff9d;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #b0b0b0;
+        }
+
+        .cta-button {
+            background-color: #00ff9d;
+            color: #121212;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+            text-transform: uppercase;
+        }
+
+        .cta-button:hover {
+            background-color: #ffffff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 255, 157, 0.3);
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo">Dark*Light chat</div>
-  <div class="controls">
-    <span class="connection-status disconnected" id="connectionStatus">جاري الاتصال...</span>
-    <span class="user-id" id="userId">---</span>
-    <span id="onlineCount" style="font-size:12px;color:#888">متصل: 0</span>
-    <button class="control-btn" id="privateBtn" style="display:none;">★ خاص</button>
-    <button class="gif-btn" id="gifBtn">GIF</button>
-  </div>
-</div>
+    <div class="container">
+        <h1>Dark Chat</h1>
+        <p>مرحباً بك في عالم الدردشة المظلم. تواصل بحرية وأمان.</p>
+        <button id="ctaButton" class="cta-button">انضم الآن</button>
+        <footer>
+            <p>&copy; 2025 Dark Chat. جميع الحقوق محفوظة.</p>
+        </footer>
+    </div>
 
-<div class="chat-container" id="chatContainer">
-  <div class="success-message"> متصل بنجاح! الدردشة جاهزة.</div>
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctaButton = document.getElementById('ctaButton');
 
-<div class="input-container" id="inputContainer">
-  <div class="input-row">
-    <span class="prompt" id="promptText">guest:~$</span>
-    <input type="text" class="message-input" id="messageInput" placeholder="اكتب رسالتك هنا..." autocomplete="off">
-  </div>
-</div>
-
-<div class="modal" id="startModal" style="display:block;">
-  <div class="modal-content">
-    <div class="modal-title">اختر طريقة الدخول</div>
-    <button class="modal-btn" id="anonStart">الدخول كمجهول</button>
-    <button class="modal-btn" id="newAcc">تسجيل جديد</button>
-    <button class="modal-btn" id="loginAcc">تسجيل دخول</button>
-  </div>
-</div>
-
-<div class="modal" id="loginForm">
-  <div class="modal-content">
-    <div class="modal-title" id="formTitle">تسجيل جديد</div>
-    <input type="text" id="regName" placeholder="اسم المستخدم">
-    <input type="password" id="regPass" placeholder="رمز سري (5 خانات أو أكثر)">
-    <button class="modal-btn" id="formSubmit">تأكيد</button>
-    <button class="modal-btn" id="cancelForm">إلغاء</button>
-    <div style="color:#888;font-size:12px;margin-top:10px;">اسم Anonymous محجوز للمجهولين فقط</div>
-  </div>
-</div>
-
-<div class="modal" id="privateModal">
-  <div class="modal-content">
-    <div class="modal-title">اختر من يمكنه رؤية رسائلك</div>
-    <div class="user-list" id="userList"></div>
-    <button class="modal-btn" id="applyPrivate">تطبيق</button>
-    <button class="modal-btn" id="cancelPrivate">إلغاء</button>
-    <button class="modal-btn" id="publicMode">عام للجميع</button>
-  </div>
-</div>
-
-<div class="modal" id="gifModal">
-  <div class="modal-content gif-modal-content">
-    <button class="gif-close-btn" id="gifCloseX">✖</button>
-    <div class="modal-title">ابحث عن GIF</div>
-    <input type="text" id="gifSearch" class="gif-search" placeholder="ابحث عن GIF...">
-    <div class="gif-results" id="gifResults"></div>
-  </div>
-</div>
-
-<script>
-const firebaseConfig={
- apiKey:"AIzaSyD3LkYqJE5Y_TR6A6UnajL304eyL4zO2lM",
- authDomain:"darklight-chat.firebaseapp.com",
- databaseURL:"https://darklight-chat-default-rtdb.europe-west1.firebasedatabase.app",
- projectId:"darklight-chat",
- storageBucket:"darklight-chat.firebasestorage.app",
- messagingSenderId:"425772939802",
- appId:"1:425772939802:web:5ba327426570f1b0d82fa3"
-};
-firebase.initializeApp(firebaseConfig);
-var database=firebase.database();
-
-const GIPHY_API_KEY = "efxIXZk8hBcXsDtZomqJGDi2MQJHyOWW";
-
-class DarkLightChat{
- constructor(userId){this.userId=userId;this.isPrivateMode=false;this.selectedUsers=new Set();this.onlineUsers=new Map();this.init();}
- init(){
-  this.el={userId:document.getElementById('userId'),onlineCount:document.getElementById('onlineCount'),connectionStatus:document.getElementById('connectionStatus'),
-           chatContainer:document.getElementById('chatContainer'),inputContainer:document.getElementById('inputContainer'),messageInput:document.getElementById('messageInput'),
-           promptText:document.getElementById('promptText'),privateBtn:document.getElementById('privateBtn'),privateModal:document.getElementById('privateModal'),
-           userList:document.getElementById('userList')};
-  this.userRef=database.ref(`users/${this.userId.replace('#','_')}`);
-  this.messagesRef=database.ref('messages');
-  this.onlineUsersRef=database.ref('users');
-  database.ref('.info/connected').on('value',snap=>{const c=snap.val();
-    this.el.connectionStatus.textContent=c?'متصل':'غير متصل';
-    this.el.connectionStatus.className='connection-status '+(c?'connected':'disconnected');
-    if(c){this.userRef.set({userId:this.userId,lastSeen:firebase.database.ServerValue.TIMESTAMP,status:'online'});this.userRef.onDisconnect().remove();}
-  });
-  this.messagesRef.limitToLast(50).on('child_added',s=>{const d=s.val(); if(d && d.userId!==this.userId) this.displayMessage(d);});
-  this.onlineUsersRef.on('value',s=>{const u=s.val()||{};this.onlineUsers.clear();Object.keys(u).forEach(id=>{const orig=id.replace('_','#');if(orig!==this.userId)this.onlineUsers.set(orig,u[id]);});this.el.onlineCount.textContent='متصل: '+(this.onlineUsers.size+1);});
-  this.el.messageInput.addEventListener('keypress',e=>{if(e.key==='Enter')this.sendMessage();});
-  document.getElementById('privateBtn').style.display='inline-block';
-  this.el.chatContainer.style.display='block';
-  this.el.inputContainer.style.display='block';
-  this.el.userId.textContent=this.userId;
-  this.el.promptText.textContent=`${this.userId}:~$`;
-  document.getElementById('applyPrivate').onclick=()=>{this.isPrivateMode=this.selectedUsers.size>0;this.hidePrivate();};
-  document.getElementById('cancelPrivate').onclick=()=>this.hidePrivate();
-  document.getElementById('publicMode').onclick=()=>{this.isPrivateMode=false;this.selectedUsers.clear();this.hidePrivate();};
-  document.getElementById('privateBtn').onclick=()=>this.showPrivate();
- }
- showPrivate(){this.updateUserList();this.el.privateModal.style.display='block';}
- hidePrivate(){this.el.privateModal.style.display='none';}
- updateUserList(){const list=this.el.userList;list.innerHTML='';if(this.onlineUsers.size===0){list.innerHTML='<div style="color:#888;">لا يوجد مستخدمين</div>';return;}this.onlineUsers.forEach((_,id)=>{const item=document.createElement('div');item.className='user-item';const c=document.createElement('input');c.type='checkbox';c.className='user-checkbox';c.checked=this.selectedUsers.has(id);c.onchange=e=>{e.target.checked?this.selectedUsers.add(id):this.selectedUsers.delete(id);};const lbl=document.createElement('span');lbl.textContent=id;lbl.className='other-username';item.append(c,lbl);list.appendChild(item);});}
- async sendMessage(){const txt=this.el.messageInput.value.trim();if(!txt)return;const ts=new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});const data={userId:this.userId,timestamp:ts,content:txt,isPrivate:this.isPrivateMode,recipients:this.isPrivateMode?Array.from(this.selectedUsers):[],serverTimestamp:firebase.database.ServerValue.TIMESTAMP};this.displayMessage(data);await this.messagesRef.push(data);this.el.messageInput.value='';}
- displayMessage(d){const div=document.createElement('div');div.className='message';const mine=d.userId===this.userId;const canSee=!d.isPrivate||mine||(d.recipients||[]).includes(this.userId);const content=canSee?d.content:'🔒 رسالة خاصة';const uClass=mine?'my-username':'other-username';const lock=d.isPrivate?' 🔒':'';div.innerHTML=`<span class="timestamp">[${d.timestamp}]</span><span class="username ${uClass}">&lt;${d.userId}&gt;</span>${lock}<span class="${canSee?'':'encrypted-message'}"> ${content}</span>`;this.el.chatContainer.appendChild(div);this.el.chatContainer.scrollTop=this.el.chatContainer.scrollHeight;}
-}
-
-async function getNextNumber(name){const snap=await database.ref('registeredNames/'+name).once('value');let n=1;if(snap.exists())n=snap.val().count+1;await database.ref('registeredNames/'+name).set({count:n});return n;}
-
-let currentChat=null;
-function startChat(uid){document.getElementById('startModal').style.display='none';document.getElementById('loginForm').style.display='none';currentChat=new DarkLightChat(uid);}
-
-/* === واجهة البداية === */
-let formMode='new';
-document.getElementById('anonStart').onclick=()=>{const num=Math.floor(Math.random()*9000)+1000;startChat(`Anonymous#${num}`);};
-document.getElementById('newAcc').onclick=()=>{formMode='new';document.getElementById('formTitle').textContent='تسجيل جديد';document.getElementById('loginForm').style.display='block';};
-document.getElementById('loginAcc').onclick=()=>{formMode='login';document.getElementById('formTitle').textContent='تسجيل دخول';document.getElementById('loginForm').style.display='block';};
-document.getElementById('cancelForm').onclick=()=>{document.getElementById('loginForm').style.display='none';};
-document.getElementById('formSubmit').onclick=async()=>{const name=document.getElementById('regName').value.trim();const pass=document.getElementById('regPass').value.trim();if(!name||!pass){alert('يرجى إدخال الاسم والرمز');return;}if(pass.length<5){alert('الرمز 5 خانات أو أكثر');return;}if(/^anonymous#/i.test(name)){alert('اسم Anonymous محجوز');return;}if(formMode==='new'){const num=await getNextNumber(name);await database.ref('accounts/'+name).set({password:pass});startChat(`${name}#${num}`);}else{const snap=await database.ref('accounts/'+name).once('value');if(!snap.exists()||snap.val().password!==pass){alert('بيانات غير صحيحة');return;}const num=await getNextNumber(name);startChat(`${name}#${num}`);}};
- 
-/* === GIF Support === */
-const gifModal=document.getElementById("gifModal");
-const gifBtn=document.getElementById("gifBtn");
-const gifCloseX=document.getElementById("gifCloseX");
-const gifSearch=document.getElementById("gifSearch");
-const gifResults=document.getElementById("gifResults");
-
-gifBtn.onclick=()=>{gifModal.style.display="block";gifResults.innerHTML="";gifSearch.value="";gifSearch.focus();};
-gifCloseX.onclick=()=>gifModal.style.display="none";
-
-gifSearch.addEventListener("keypress",async e=>{
- if(e.key==="Enter"){
-   const q=gifSearch.value.trim();if(!q){gifResults.innerHTML="اكتب كلمة بحث";return;}
-   gifResults.innerHTML="جارٍ البحث...";
-   try{
-     const res=await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=12&rating=pg-13&lang=ar`);
-     const data=await res.json();gifResults.innerHTML="";
-     if(data.data.length===0){gifResults.innerHTML="لا توجد نتائج";return;}
-     data.data.forEach(g=>{
-       const img=document.createElement("img");
-       img.src=g.images.fixed_width.url;
-       img.onclick=()=>{sendGif(g.images.fixed_width.url);gifModal.style.display="none";};
-       gifResults.appendChild(img);
-     });
-   }catch(err){gifResults.innerHTML="خطأ في جلب النتائج";}
- }
-});
-
-function sendGif(url){
- const ts=new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'});
- const data={userId:currentChat.userId,timestamp:ts,content:`<img src="${url}" style="max-width:200px;border-radius:6px;">`,isPrivate:currentChat.isPrivateMode,
- recipients:currentChat.isPrivateMode?Array.from(currentChat.selectedUsers):[],
- serverTimestamp:firebase.database.ServerValue.TIMESTAMP};
- currentChat.displayMessage(data);
- currentChat.messagesRef.push(data);
-}
-</script>
+            if (ctaButton) {
+                ctaButton.addEventListener('click', () => {
+                    alert('شكراً لانضمامك إلى Dark Chat! قريباً سيتم إطلاق التطبيق.');
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>
