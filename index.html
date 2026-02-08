@@ -95,12 +95,12 @@
                 طباعة هذا العميل فقط
             </button>
 
-            <!-- زر خصم يوم -->
+            <!-- خصم يوم -->
             <button id="menu-minus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 خصم يوم توصيل
             </button>
 
-            <!-- زر إضافة يوم -->
+            <!-- إضافة يوم -->
             <button id="menu-plus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 إضافة يوم توصيل
             </button>
@@ -149,7 +149,11 @@
             return d.getDay() === 5;
         };
 
+        // خصم يوم تلقائي لعميل معيّن – مع حماية إضافية للحالة
         const maybeDecreaseDayForCustomer = async (customer) => {
+            // ✅ لا ننقص إذا الحالة ليست فعالة
+            if (customer.status !== 'active') return;
+
             if (typeof customer.deliveryDays !== 'number' || customer.deliveryDays <= 0) return;
 
             const today = getTodayDateString();
@@ -217,6 +221,7 @@
                     customersArr.push({ id, ...c });
                 });
 
+                // ✅ خصم الأيام تلقائي يتم فقط إذا كنا في قائمة "active"
                 if (status === 'active') {
                     for (const c of customersArr) {
                         await maybeDecreaseDayForCustomer(c);
