@@ -35,7 +35,7 @@
             <button onclick="window.showPage('paused')" class="group">
                 <div class="w-40 h-40 bg-red-500 rounded-3xl flex items-center justify-center shadow-lg hover:scale-105 transition">
                     <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 0 0118 0z"/>
                     </svg>
                 </div>
                 <p class="mt-4 font-bold text-red-600">المتوقفة</p>
@@ -73,6 +73,7 @@
             <div class="space-y-4">
                 <input type="text" id="cust-name" placeholder="اسم العميل" class="w-full p-3 border rounded-xl outline-none">
                 <input type="tel" id="cust-phone" placeholder="رقم الجوال" class="w-full p-3 border rounded-xl outline-none">
+                <input type="text" id="cust-district" placeholder="الحي" class="w-full p-3 border rounded-xl outline-none">
                 <input type="text" id="cust-maps" placeholder="رابط خرائط قوقل" class="w-full p-3 border rounded-xl outline-none">
                 <button onclick="window.saveCustomer()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
                 <button onclick="window.closeModal()" class="w-full text-gray-400">إلغاء</button>
@@ -151,6 +152,7 @@
                                 ${c.name}
                                 <span class="ml-2 text-xs ${statusColorClass}">(${statusLabel})</span><br>
                                 <small class="text-gray-400 font-normal">${c.phone}</small>
+                                ${c.district ? `<br><small class="text-gray-500 font-normal">الحي: ${c.district}</small>` : ''}
                             </td>
                             <td class="p-4 text-left">
                                 <button onclick="window.changeStatus('${id}', '${status === 'active' ? 'paused' : 'active'}')" 
@@ -167,6 +169,7 @@
         window.saveCustomer = async () => {
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
+            const district = document.getElementById('cust-district').value;
             const mapsUrl = document.getElementById('cust-maps').value;
 
             if (!name || !phone) return alert("يرجى إدخال الاسم والجوال");
@@ -174,6 +177,7 @@
             await addDoc(collection(db, "customers"), {
                 name,
                 phone,
+                district,
                 mapsUrl,
                 status: 'active',
                 createdAt: new Date()
@@ -183,6 +187,7 @@
             window.closeModal();
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
+            document.getElementById('cust-district').value = '';
             document.getElementById('cust-maps').value = '';
         };
 
@@ -191,7 +196,7 @@
             await updateDoc(doc(db, "customers", id), { status: newStatus });
         };
 
-        // طباعة الملصقات
+        // طباعة الملصقات (مع الحي تحت الباركود)
         window.printLabels = () => {
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = '';
@@ -205,6 +210,7 @@
                     <div style="font-size: 22px; font-weight: bold;">${c.name}</div>
                     <div style="font-size: 18px; margin: 5px 0;">${c.phone}</div>
                     <div id="qr-${c.id}" style="display: flex; justify-content: center; margin: 15px 0;"></div>
+                    ${c.district ? `<div style="font-size: 14px; margin-top: 5px;">الحي: ${c.district}</div>` : ''}
                     <div style="font-size: 12px; margin-top: 10px;">* وجبة يومية - قاوم *</div>
                 `;
                 printArea.appendChild(item);
@@ -230,6 +236,7 @@
         window.openModal = () => {
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
+            document.getElementById('cust-district').value = '';
             document.getElementById('cust-maps').value = '';
             document.getElementById('modal').classList.remove('hidden');
         };
