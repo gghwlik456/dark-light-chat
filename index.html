@@ -74,6 +74,7 @@
                 <input type="text" id="cust-name" placeholder="اسم العميل" class="w-full p-3 border rounded-xl outline-none">
                 <input type="tel" id="cust-phone" placeholder="رقم الجوال" class="w-full p-3 border rounded-xl outline-none">
                 <input type="text" id="cust-district" placeholder="الحي" class="w-full p-3 border rounded-xl outline-none">
+                <input type="number" id="cust-days" placeholder="عدد أيام التوصيل" class="w-full p-3 border rounded-xl outline-none" min="1">
                 <input type="text" id="cust-maps" placeholder="رابط خرائط قوقل" class="w-full p-3 border rounded-xl outline-none">
                 <button onclick="window.saveCustomer()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
                 <button onclick="window.closeModal()" class="w-full text-gray-400">إلغاء</button>
@@ -84,19 +85,16 @@
     <!-- منطقة الطباعة -->
     <div id="print-area"></div>
 
-    <!-- منيو ثلاث النقاط (عامة، نغير محتواها بالـ JS) -->
+    <!-- منيو ثلاث النقاط -->
     <div id="actions-menu" class="hidden fixed inset-0 bg-black/30 no-print flex items-center justify-center z-40">
         <div class="bg-white rounded-2xl w-full max-w-xs p-4 space-y-2">
             <div class="font-bold text-lg mb-2 text-right">خيارات العميل</div>
+            <div id="menu-info" class="text-xs text-gray-600 text-right mb-1 hidden"></div>
             <button id="menu-print-one" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 طباعة هذا العميل فقط
             </button>
-            <button id="menu-second" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden">
-                <!-- النص يتغير حسب الحالة -->
-            </button>
-            <button id="menu-third" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden">
-                <!-- النص يتغير حسب الحالة -->
-            </button>
+            <button id="menu-second" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
+            <button id="menu-third" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
             <button onclick="window.closeActionsMenu()" class="w-full text-center px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
                 إغلاق
             </button>
@@ -121,8 +119,8 @@
         
         let unsubscribe = null; 
         let currentListData = [];
-        let currentStatusFilter = 'active'; // للحفظ أي قائمة مفتوحة الآن
-        let selectedCustomer = null;       // العميل المختار من منيو الثلاث نقاط
+        let currentStatusFilter = 'active';
+        let selectedCustomer = null;
 
         // عرض قائمة حسب الحالة
         window.showPage = (status) => {
@@ -176,6 +174,7 @@
                                 <span class="ml-2 text-xs ${statusColorClass}">(${statusLabel})</span><br>
                                 <small class="text-gray-400 font-normal">${c.phone}</small>
                                 ${c.district ? `<br><small class="text-gray-500 font-normal">الحي: ${c.district}</small>` : ''}
+                                ${typeof c.deliveryDays === 'number' ? `<br><small class="text-gray-500 font-normal">أيام التوصيل: ${c.deliveryDays}</small>` : ''}
                             </td>
                             <td class="p-4 text-left">
                                 <button
@@ -189,20 +188,24 @@
             });
         };
 
-        // حفظ عميل جديد + إغلاق المودال بعد الحفظ
+        // حفظ عميل جديد
         window.saveCustomer = async () => {
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
             const district = document.getElementById('cust-district').value;
+            const daysStr = document.getElementById('cust-days').value;
             const mapsUrl = document.getElementById('cust-maps').value;
 
             if (!name || !phone) return alert("يرجى إدخال الاسم والجوال");
+
+            const deliveryDays = daysStr ? Number(daysStr) : null;
             
             await addDoc(collection(db, "customers"), {
                 name,
                 phone,
                 district,
                 mapsUrl,
+                deliveryDays,   // عدد أيام التوصيل
                 status: 'active',
                 createdAt: new Date()
             });
@@ -211,6 +214,7 @@
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
             document.getElementById('cust-district').value = '';
+            document.getElementById('cust-days').value = '';
             document.getElementById('cust-maps').value = '';
         };
 
@@ -230,7 +234,7 @@
             buildPrintArea([customer]);
         };
 
-        // بناء منطقة الطباعة من مصفوفة عملاء
+        // بناء منطقة الطباعة
         const buildPrintArea = (list) => {
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = '';
@@ -257,16 +261,26 @@
             setTimeout(() => { window.print(); }, 500);
         };
 
-        // فتح منيو ثلاث النقاط لعميل معيّن
+        // فتح منيو ثلاث النقاط
         window.openActionsMenu = (id) => {
             const c = currentListData.find(x => x.id === id);
             if (!c) return;
             selectedCustomer = c;
 
             const menu = document.getElementById('actions-menu');
+            const info = document.getElementById('menu-info');
             const btnPrint = document.getElementById('menu-print-one');
             const btnSecond = document.getElementById('menu-second');
             const btnThird = document.getElementById('menu-third');
+
+            // عرض عدد أيام التوصيل في أعلى المينيو
+            if (typeof c.deliveryDays === 'number') {
+                info.textContent = `عدد أيام التوصيل: ${c.deliveryDays}`;
+                info.classList.remove('hidden');
+            } else {
+                info.textContent = '';
+                info.classList.add('hidden');
+            }
 
             // زر الطباعة لهذا العميل
             btnPrint.onclick = () => {
@@ -279,7 +293,6 @@
             btnThird.classList.add('hidden');
 
             if (c.status === 'active') {
-                // فعال: (2) إيقاف مؤقت، (3) إنهاء الاشتراك
                 btnSecond.textContent = 'إيقاف مؤقت';
                 btnSecond.onclick = async () => {
                     await window.changeStatus(c.id, 'paused');
@@ -295,7 +308,6 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'paused') {
-                // متوقف مؤقتًا: (2) تفعيل، (3) إنهاء الاشتراك
                 btnSecond.textContent = 'تفعيل';
                 btnSecond.onclick = async () => {
                     await window.changeStatus(c.id, 'active');
@@ -311,14 +323,12 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'expired') {
-                // منتهي: (2) تجديد الحساب، (3) لا يظهر
                 btnSecond.textContent = 'تجديد الحساب';
                 btnSecond.onclick = async () => {
                     await window.changeStatus(c.id, 'active');
                     window.closeActionsMenu();
                 };
                 btnSecond.classList.remove('hidden');
-                // الثالثة تظل مخفية
             }
 
             menu.classList.remove('hidden');
@@ -341,6 +351,7 @@
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
             document.getElementById('cust-district').value = '';
+            document.getElementById('cust-days').value = '';
             document.getElementById('cust-maps').value = '';
             document.getElementById('modal').classList.remove('hidden');
         };
