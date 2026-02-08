@@ -20,7 +20,7 @@
 </head>
 <body>
 
-    <!-- الصفحة الرئيسية (اختيار القائمة) -->
+    <!-- الصفحة الرئيسية -->
     <div id="home-page" class="h-screen flex flex-col items-center justify-center space-y-12 no-print">
         <h1 class="text-3xl font-bold text-gray-800 tracking-tight">نظام إدارة اشتراكات Qawim</h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
@@ -102,7 +102,7 @@
         let unsubscribe = null; 
         let currentListData = [];
 
-        // التنقل بين القوائم (فعال / متوقف / منتهي)
+        // عرض قائمة حسب الحالة
         window.showPage = (status) => {
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('list-page').classList.remove('hidden');
@@ -114,14 +114,11 @@
             };
             document.getElementById('page-title').innerText = titles[status];
 
-            // زر الإضافة والطباعة يظهر فقط في التوصيل اليومي
             document.getElementById('add-btn').classList.toggle('hidden', status !== 'active');
             document.getElementById('print-btn').classList.toggle('hidden', status !== 'active');
 
-            // إيقاف الاستماع السابق
             if (unsubscribe) unsubscribe();
 
-            // جلب العملاء حسب الحالة فقط
             const q = query(collection(db, "customers"), where("status", "==", status));
             
             unsubscribe = onSnapshot(q, (snap) => {
@@ -134,7 +131,6 @@
                     const id = d.id;
                     currentListData.push({id, ...c});
 
-                    // تحديد نص الحالة واللون
                     let statusLabel = '';
                     let statusColorClass = '';
 
@@ -167,7 +163,7 @@
             });
         };
 
-        // حفظ عميل جديد
+        // حفظ عميل جديد + إغلاق المودال بعد الحفظ
         window.saveCustomer = async () => {
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
@@ -183,14 +179,14 @@
                 createdAt: new Date()
             });
 
-            // إغلاق المودال وتفريغ الحقول بعد الحفظ
+            // إغلاق النافذة وتفريغ الحقول بعد الحفظ
             window.closeModal();
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
             document.getElementById('cust-maps').value = '';
         };
 
-        // تغيير حالة العميل (فعال / متوقف) - نضبط المنتهي لاحقًا لو حاب
+        // تغيير حالة العميل
         window.changeStatus = async (id, newStatus) => {
             await updateDoc(doc(db, "customers", id), { status: newStatus });
         };
@@ -239,7 +235,8 @@
         };
 
         // إغلاق نافذة الإضافة
-        window.closeModal = () => document.getElementById('modal').classList.add('hidden');
+        window.closeModal = () =>
+            document.getElementById('modal').classList.add('hidden');
     </script>
 </body>
 </html>
