@@ -90,11 +90,24 @@
         <div class="bg-white rounded-2xl w-full max-w-xs p-4 space-y-2">
             <div class="font-bold text-lg mb-2 text-right">خيارات العميل</div>
             <div id="menu-info" class="text-xs text-gray-600 text-right mb-1 hidden"></div>
+
             <button id="menu-print-one" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 طباعة هذا العميل فقط
             </button>
+
+            <!-- زر خصم يوم -->
+            <button id="menu-minus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+                خصم يوم توصيل
+            </button>
+
+            <!-- زر إضافة يوم -->
+            <button id="menu-plus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+                إضافة يوم توصيل
+            </button>
+
             <button id="menu-second" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
             <button id="menu-third" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
+
             <button onclick="window.closeActionsMenu()" class="w-full text-center px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
                 إغلاق
             </button>
@@ -122,7 +135,6 @@
         let currentStatusFilter = 'active';
         let selectedCustomer = null;
 
-        // دالة مساعدة: إرجاع تاريخ اليوم كنص بسيط YYYY-MM-DD
         const getTodayDateString = () => {
             const d = new Date();
             const y = d.getFullYear();
@@ -131,33 +143,24 @@
             return `${y}-${m}-${day}`;
         };
 
-        // دالة مساعدة: هل اليوم جمعة؟
         const isTodayFriday = () => {
             const d = new Date();
-            // في JS: 0 = الأحد, 5 = الجمعة
+            // 5 = الجمعة
             return d.getDay() === 5;
         };
 
-        // خصم يوم واحد من عميل معيّن (مع التحقق من الجمعة والصفر)
         const maybeDecreaseDayForCustomer = async (customer) => {
-            // لو ما عنده أيام توصيل أصلاً، نتركه
             if (typeof customer.deliveryDays !== 'number' || customer.deliveryDays <= 0) return;
 
             const today = getTodayDateString();
-
-            // لو اليوم جمعة، لا ينقص
             if (isTodayFriday()) return;
-
-            // لو already خصمنا لهذا اليوم، لا نكرر
             if (customer.lastDeliveryDate === today) return;
 
-            // لو ما عنده remainingDays، نبدأها من deliveryDays
             const currentRemaining =
                 typeof customer.remainingDays === 'number'
                 ? customer.remainingDays
                 : customer.deliveryDays;
 
-            // لو خلاص صفر أو أقل، نضمن أنه منتهي
             if (currentRemaining <= 0) {
                 await updateDoc(doc(db, "customers", customer.id), {
                     remainingDays: 0,
@@ -169,7 +172,6 @@
             const newRemaining = currentRemaining - 1;
 
             if (newRemaining <= 0) {
-                // آخر يوم → يصير منتهي
                 await updateDoc(doc(db, "customers", customer.id), {
                     remainingDays: 0,
                     status: 'expired',
@@ -183,7 +185,6 @@
             }
         };
 
-        // عرض قائمة حسب الحالة
         window.showPage = (status) => {
             currentStatusFilter = status;
 
@@ -209,7 +210,6 @@
                 table.innerHTML = '';
                 currentListData = [];
 
-                // نبني مصفوفة مؤقتة عشان نقدر نحدّث ونعرِض بعد الخصم
                 const customersArr = [];
                 snap.forEach(d => {
                     const c = d.data();
@@ -217,14 +217,12 @@
                     customersArr.push({ id, ...c });
                 });
 
-                // لو القائمة فعال → نفعل منطق خصم الأيام لكل عميل
                 if (status === 'active') {
                     for (const c of customersArr) {
                         await maybeDecreaseDayForCustomer(c);
                     }
                 }
 
-                // بعد التحديثات، نعيد ملء currentListData والعرض
                 customersArr.forEach(c => {
                     currentListData.push(c);
 
@@ -242,7 +240,6 @@
                         statusColorClass = 'text-gray-600';
                     }
 
-                    // نعرض remainingDays لو موجود، وإلا نعرض deliveryDays
                     let daysText = '';
                     if (typeof c.remainingDays === 'number') {
                         daysText = `أيام التوصيل المتبقية: ${c.remainingDays}`;
@@ -271,7 +268,6 @@
             });
         };
 
-        // حفظ عميل جديد
         window.saveCustomer = async () => {
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
@@ -288,8 +284,8 @@
                 phone,
                 district,
                 mapsUrl,
-                deliveryDays,        // إجمالي الأيام
-                remainingDays: deliveryDays, // تبدأ مساوية
+                deliveryDays,
+                remainingDays: deliveryDays,
                 status: 'active',
                 createdAt: new Date()
             });
@@ -302,23 +298,19 @@
             document.getElementById('cust-maps').value = '';
         };
 
-        // تغيير حالة العميل
         window.changeStatus = async (id, newStatus) => {
             await updateDoc(doc(db, "customers", id), { status: newStatus });
         };
 
-        // طباعة كل القائمة الحالية
         window.printLabels = () => {
             if (currentListData.length === 0) return alert("لا يوجد عملاء للطباعة");
             buildPrintArea(currentListData);
         };
 
-        // طباعة عميل واحد
         window.printSingleCustomer = (customer) => {
             buildPrintArea([customer]);
         };
 
-        // بناء منطقة الطباعة
         const buildPrintArea = (list) => {
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = '';
@@ -345,7 +337,6 @@
             setTimeout(() => { window.print(); }, 500);
         };
 
-        // فتح منيو ثلاث النقاط
         window.openActionsMenu = (id) => {
             const c = currentListData.find(x => x.id === id);
             if (!c) return;
@@ -354,10 +345,11 @@
             const menu = document.getElementById('actions-menu');
             const info = document.getElementById('menu-info');
             const btnPrint = document.getElementById('menu-print-one');
+            const btnMinusDay = document.getElementById('menu-minus-day');
+            const btnPlusDay = document.getElementById('menu-plus-day');
             const btnSecond = document.getElementById('menu-second');
             const btnThird = document.getElementById('menu-third');
 
-            // عرض عدد أيام التوصيل (المتبقية إن وجدت)
             if (typeof c.remainingDays === 'number') {
                 info.textContent = `أيام التوصيل المتبقية: ${c.remainingDays}`;
                 info.classList.remove('hidden');
@@ -369,13 +361,49 @@
                 info.classList.add('hidden');
             }
 
-            // زر الطباعة لهذا العميل
             btnPrint.onclick = () => {
                 window.printSingleCustomer(selectedCustomer);
                 window.closeActionsMenu();
             };
 
-            // ضبط الأزرار حسب الحالة
+            // خصم يوم يدوي
+            btnMinusDay.onclick = async () => {
+                const currentRemaining =
+                    typeof c.remainingDays === 'number'
+                        ? c.remainingDays
+                        : (typeof c.deliveryDays === 'number' ? c.deliveryDays : 0);
+
+                let newRemaining = currentRemaining - 1;
+                if (newRemaining < 0) newRemaining = 0;
+
+                const updateData = {
+                    remainingDays: newRemaining
+                };
+
+                if (newRemaining === 0) {
+                    updateData.status = 'expired';
+                }
+
+                await updateDoc(doc(db, "customers", c.id), updateData);
+                window.closeActionsMenu();
+            };
+
+            // إضافة يوم يدوي
+            btnPlusDay.onclick = async () => {
+                const currentRemaining =
+                    typeof c.remainingDays === 'number'
+                        ? c.remainingDays
+                        : (typeof c.deliveryDays === 'number' ? c.deliveryDays : 0);
+
+                const newRemaining = currentRemaining + 1;
+
+                await updateDoc(doc(db, "customers", c.id), {
+                    remainingDays: newRemaining
+                });
+
+                window.closeActionsMenu();
+            };
+
             btnSecond.classList.add('hidden');
             btnThird.classList.add('hidden');
 
@@ -412,7 +440,6 @@
             } else if (c.status === 'expired') {
                 btnSecond.textContent = 'تجديد الحساب';
                 btnSecond.onclick = async () => {
-                    // عند التجديد نرجع الأيام المتبقية = إجمالي الأيام (لو موجودة)
                     let newRemaining = typeof c.deliveryDays === 'number' ? c.deliveryDays : null;
                     const updateData = {
                         status: 'active',
@@ -435,14 +462,12 @@
             selectedCustomer = null;
         };
 
-        // رجوع للرئيسية
         window.goHome = () => {
             if (unsubscribe) unsubscribe();
             document.getElementById('home-page').classList.remove('hidden');
             document.getElementById('list-page').classList.add('hidden');
         };
 
-        // فتح نافذة إضافة عميل جديد مع تفريغ الحقول
         window.openModal = () => {
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
@@ -452,7 +477,6 @@
             document.getElementById('modal').classList.remove('hidden');
         };
 
-        // إغلاق نافذة الإضافة
         window.closeModal = () =>
             document.getElementById('modal').classList.add('hidden');
     </script>
