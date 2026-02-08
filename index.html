@@ -84,6 +84,25 @@
     <!-- منطقة الطباعة -->
     <div id="print-area"></div>
 
+    <!-- منيو ثلاث النقاط (عامة، نغير محتواها بالـ JS) -->
+    <div id="actions-menu" class="hidden fixed inset-0 bg-black/30 no-print flex items-center justify-center z-40">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-4 space-y-2">
+            <div class="font-bold text-lg mb-2 text-right">خيارات العميل</div>
+            <button id="menu-print-one" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
+                طباعة هذا العميل فقط
+            </button>
+            <button id="menu-second" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden">
+                <!-- النص يتغير حسب الحالة -->
+            </button>
+            <button id="menu-third" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden">
+                <!-- النص يتغير حسب الحالة -->
+            </button>
+            <button onclick="window.closeActionsMenu()" class="w-full text-center px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
+                إغلاق
+            </button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -102,9 +121,13 @@
         
         let unsubscribe = null; 
         let currentListData = [];
+        let currentStatusFilter = 'active'; // للحفظ أي قائمة مفتوحة الآن
+        let selectedCustomer = null;       // العميل المختار من منيو الثلاث نقاط
 
         // عرض قائمة حسب الحالة
         window.showPage = (status) => {
+            currentStatusFilter = status;
+
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('list-page').classList.remove('hidden');
             
@@ -155,9 +178,10 @@
                                 ${c.district ? `<br><small class="text-gray-500 font-normal">الحي: ${c.district}</small>` : ''}
                             </td>
                             <td class="p-4 text-left">
-                                <button onclick="window.changeStatus('${id}', '${status === 'active' ? 'paused' : 'active'}')" 
-                                        class="text-xs border border-gray-200 px-3 py-1 rounded-lg">
-                                    ${status === 'active' ? 'إيقاف' : 'تفعيل'}
+                                <button
+                                  class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 text-gray-500 hover:bg-gray-100 text-lg"
+                                  onclick="window.openActionsMenu('${id}')">
+                                  ⋮
                                 </button>
                             </td>
                         </tr>`;
@@ -183,7 +207,6 @@
                 createdAt: new Date()
             });
 
-            // إغلاق النافذة وتفريغ الحقول بعد الحفظ
             window.closeModal();
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
@@ -196,14 +219,23 @@
             await updateDoc(doc(db, "customers", id), { status: newStatus });
         };
 
-        // طباعة الملصقات (مع الحي تحت الباركود)
+        // طباعة كل القائمة الحالية
         window.printLabels = () => {
+            if (currentListData.length === 0) return alert("لا يوجد عملاء للطباعة");
+            buildPrintArea(currentListData);
+        };
+
+        // طباعة عميل واحد
+        window.printSingleCustomer = (customer) => {
+            buildPrintArea([customer]);
+        };
+
+        // بناء منطقة الطباعة من مصفوفة عملاء
+        const buildPrintArea = (list) => {
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = '';
 
-            if (currentListData.length === 0) return alert("لا يوجد عملاء للطباعة");
-
-            currentListData.forEach(c => {
+            list.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'label-item';
                 item.innerHTML = `
@@ -222,7 +254,79 @@
                 });
             });
 
-            setTimeout(() => { window.print(); }, 1000);
+            setTimeout(() => { window.print(); }, 500);
+        };
+
+        // فتح منيو ثلاث النقاط لعميل معيّن
+        window.openActionsMenu = (id) => {
+            const c = currentListData.find(x => x.id === id);
+            if (!c) return;
+            selectedCustomer = c;
+
+            const menu = document.getElementById('actions-menu');
+            const btnPrint = document.getElementById('menu-print-one');
+            const btnSecond = document.getElementById('menu-second');
+            const btnThird = document.getElementById('menu-third');
+
+            // زر الطباعة لهذا العميل
+            btnPrint.onclick = () => {
+                window.printSingleCustomer(selectedCustomer);
+                window.closeActionsMenu();
+            };
+
+            // ضبط الأزرار حسب الحالة
+            btnSecond.classList.add('hidden');
+            btnThird.classList.add('hidden');
+
+            if (c.status === 'active') {
+                // فعال: (2) إيقاف مؤقت، (3) إنهاء الاشتراك
+                btnSecond.textContent = 'إيقاف مؤقت';
+                btnSecond.onclick = async () => {
+                    await window.changeStatus(c.id, 'paused');
+                    window.closeActionsMenu();
+                };
+                btnSecond.classList.remove('hidden');
+
+                btnThird.textContent = 'إنهاء الاشتراك';
+                btnThird.onclick = async () => {
+                    await window.changeStatus(c.id, 'expired');
+                    window.closeActionsMenu();
+                };
+                btnThird.classList.remove('hidden');
+
+            } else if (c.status === 'paused') {
+                // متوقف مؤقتًا: (2) تفعيل، (3) إنهاء الاشتراك
+                btnSecond.textContent = 'تفعيل';
+                btnSecond.onclick = async () => {
+                    await window.changeStatus(c.id, 'active');
+                    window.closeActionsMenu();
+                };
+                btnSecond.classList.remove('hidden');
+
+                btnThird.textContent = 'إنهاء الاشتراك';
+                btnThird.onclick = async () => {
+                    await window.changeStatus(c.id, 'expired');
+                    window.closeActionsMenu();
+                };
+                btnThird.classList.remove('hidden');
+
+            } else if (c.status === 'expired') {
+                // منتهي: (2) تجديد الحساب، (3) لا يظهر
+                btnSecond.textContent = 'تجديد الحساب';
+                btnSecond.onclick = async () => {
+                    await window.changeStatus(c.id, 'active');
+                    window.closeActionsMenu();
+                };
+                btnSecond.classList.remove('hidden');
+                // الثالثة تظل مخفية
+            }
+
+            menu.classList.remove('hidden');
+        };
+
+        window.closeActionsMenu = () => {
+            document.getElementById('actions-menu').classList.add('hidden');
+            selectedCustomer = null;
         };
 
         // رجوع للرئيسية
