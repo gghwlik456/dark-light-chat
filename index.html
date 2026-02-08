@@ -20,18 +20,23 @@
 </head>
 <body>
 
+    <!-- الصفحة الرئيسية (اختيار القائمة) -->
     <div id="home-page" class="h-screen flex flex-col items-center justify-center space-y-12 no-print">
         <h1 class="text-3xl font-bold text-gray-800 tracking-tight">نظام إدارة اشتراكات Qawim</h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <button onclick="window.showPage('active')" class="group">
                 <div class="w-40 h-40 bg-green-500 rounded-3xl flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                    </svg>
                 </div>
                 <p class="mt-4 font-bold text-green-600">التوصيل اليومي</p>
             </button>
             <button onclick="window.showPage('paused')" class="group">
                 <div class="w-40 h-40 bg-red-500 rounded-3xl flex items-center justify-center shadow-lg hover:scale-105 transition">
-                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
                 </div>
                 <p class="mt-4 font-bold text-red-600">المتوقفة</p>
             </button>
@@ -44,6 +49,7 @@
         </div>
     </div>
 
+    <!-- صفحة القائمة -->
     <div id="list-page" class="hidden p-6 max-w-4xl mx-auto no-print">
         <div class="flex justify-between items-center mb-8">
             <div class="flex gap-2">
@@ -60,6 +66,7 @@
         </div>
     </div>
 
+    <!-- نافذة إضافة عميل جديد -->
     <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-md rounded-2xl p-6">
             <h3 class="text-xl font-bold mb-4">إضافة عميل جديد</h3>
@@ -73,11 +80,12 @@
         </div>
     </div>
 
+    <!-- منطقة الطباعة -->
     <div id="print-area"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBxXXn9SCHhhx-Zu729uKtNUtt5QUWC1e4",
@@ -94,34 +102,58 @@
         let unsubscribe = null; 
         let currentListData = [];
 
-        // دالة التنقل بين الصفحات
+        // التنقل بين القوائم (فعال / متوقف / منتهي)
         window.showPage = (status) => {
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('list-page').classList.remove('hidden');
             
-            const titles = {'active': 'التوصيل اليومي', 'paused': 'الاشتراكات المتوقفة', 'expired': 'الاشتراكات المنتهية'};
+            const titles = {
+                'active': 'التوصيل اليومي',
+                'paused': 'الاشتراكات المتوقفة',
+                'expired': 'الاشتراكات المنتهية'
+            };
             document.getElementById('page-title').innerText = titles[status];
+
+            // زر الإضافة والطباعة يظهر فقط في التوصيل اليومي
             document.getElementById('add-btn').classList.toggle('hidden', status !== 'active');
             document.getElementById('print-btn').classList.toggle('hidden', status !== 'active');
 
-            if (unsubscribe) unsubscribe(); // إيقاف الاستماع للقائمة السابقة فوراً
+            // إيقاف الاستماع السابق
+            if (unsubscribe) unsubscribe();
 
+            // جلب العملاء حسب الحالة فقط
             const q = query(collection(db, "customers"), where("status", "==", status));
             
             unsubscribe = onSnapshot(q, (snap) => {
                 const table = document.getElementById('data-table');
                 table.innerHTML = '';
-                currentListData = []; // تحديث مصفوفة الطباعة
+                currentListData = [];
 
                 snap.forEach(d => {
                     const c = d.data();
                     const id = d.id;
                     currentListData.push({id, ...c});
 
+                    // تحديد نص الحالة واللون
+                    let statusLabel = '';
+                    let statusColorClass = '';
+
+                    if (c.status === 'active') {
+                        statusLabel = 'فعال';
+                        statusColorClass = 'text-green-600';
+                    } else if (c.status === 'paused') {
+                        statusLabel = 'متوقف مؤقتًا';
+                        statusColorClass = 'text-red-600';
+                    } else if (c.status === 'expired') {
+                        statusLabel = 'منتهي';
+                        statusColorClass = 'text-gray-600';
+                    }
+
                     table.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="p-4 font-bold text-gray-800">
-                                ${c.name} <br>
+                                ${c.name}
+                                <span class="ml-2 text-xs ${statusColorClass}">(${statusLabel})</span><br>
                                 <small class="text-gray-400 font-normal">${c.phone}</small>
                             </td>
                             <td class="p-4 text-left">
@@ -135,29 +167,38 @@
             });
         };
 
+        // حفظ عميل جديد
         window.saveCustomer = async () => {
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
             const mapsUrl = document.getElementById('cust-maps').value;
-            if(!name || !phone) return alert("يرجى إدخال الاسم والجوال");
+
+            if (!name || !phone) return alert("يرجى إدخال الاسم والجوال");
             
             await addDoc(collection(db, "customers"), {
-                name, phone, mapsUrl, status: 'active', createdAt: new Date()
+                name,
+                phone,
+                mapsUrl,
+                status: 'active',
+                createdAt: new Date()
             });
+
+            // إغلاق المودال وتفريغ الحقول بعد الحفظ
             window.closeModal();
-            // تفريغ الخانات
             document.getElementById('cust-name').value = '';
             document.getElementById('cust-phone').value = '';
             document.getElementById('cust-maps').value = '';
         };
 
+        // تغيير حالة العميل (فعال / متوقف) - نضبط المنتهي لاحقًا لو حاب
         window.changeStatus = async (id, newStatus) => {
             await updateDoc(doc(db, "customers", id), { status: newStatus });
         };
 
+        // طباعة الملصقات
         window.printLabels = () => {
             const printArea = document.getElementById('print-area');
-            printArea.innerHTML = ''; // تنظيف
+            printArea.innerHTML = '';
 
             if (currentListData.length === 0) return alert("لا يوجد عملاء للطباعة");
 
@@ -182,13 +223,22 @@
             setTimeout(() => { window.print(); }, 1000);
         };
 
+        // رجوع للرئيسية
         window.goHome = () => {
             if (unsubscribe) unsubscribe();
             document.getElementById('home-page').classList.remove('hidden');
             document.getElementById('list-page').classList.add('hidden');
         };
 
-        window.openModal = () => document.getElementById('modal').classList.remove('hidden');
+        // فتح نافذة إضافة عميل جديد مع تفريغ الحقول
+        window.openModal = () => {
+            document.getElementById('cust-name').value = '';
+            document.getElementById('cust-phone').value = '';
+            document.getElementById('cust-maps').value = '';
+            document.getElementById('modal').classList.remove('hidden');
+        };
+
+        // إغلاق نافذة الإضافة
         window.closeModal = () => document.getElementById('modal').classList.add('hidden');
     </script>
 </body>
