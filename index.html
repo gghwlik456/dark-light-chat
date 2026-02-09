@@ -122,6 +122,23 @@
         </div>
     </div>
 
+    <!-- نافذة تجديد الاشتراك -->
+    <div id="renew-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6">
+            <h3 id="ui-renew-title" class="text-xl font-bold mb-4">تجديد الاشتراك</h3>
+            <div class="space-y-4">
+                <input type="number" id="renew-days" class="w-full p-3 border rounded-xl outline-none" min="1">
+                <select id="renew-sub-type" class="w-full p-3 border rounded-xl outline-none">
+                    <option value="mixed_plus">منوع+</option>
+                    <option value="mixed">منوع</option>
+                    <option value="chicken">دجاج</option>
+                </select>
+                <button onclick="window.confirmRenew()" id="ui-btn-renew-confirm" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">تجديد</button>
+                <button onclick="window.closeRenewModal()" id="ui-btn-renew-cancel" class="w-full text-gray-400">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <!-- منطقة الطباعة -->
     <div id="print-area"></div>
 
@@ -178,6 +195,9 @@
             closeActions: 'إغلاق',
             addCustomerAlert: 'يرجى إدخال الاسم والجوال',
             noCustomersToPrint: 'لا يوجد عملاء للطباعة',
+            renewTitle: 'تجديد الاشتراك',
+            renewConfirm: 'تجديد',
+            renewCancel: 'إلغاء',
             status: {
               active: 'فعال',
               paused: 'متوقف مؤقتًا',
@@ -196,6 +216,8 @@
               days: 'عدد أيام التوصيل',
               maps: 'رابط خرائط قوقل',
               subType: 'نوع الاشتراك',
+              renewDays: 'عدد الأيام الجديدة',
+              renewSubType: 'نوع الاشتراك الجديد',
             },
             subTypes: {
               mixed_plus: 'منوع+',
@@ -232,6 +254,9 @@
             closeActions: 'Close',
             addCustomerAlert: 'Please enter name and phone',
             noCustomersToPrint: 'No customers to print',
+            renewTitle: 'Renew Subscription',
+            renewConfirm: 'Renew',
+            renewCancel: 'Cancel',
             status: {
               active: 'Active',
               paused: 'Paused',
@@ -250,6 +275,8 @@
               days: 'Number of delivery days',
               maps: 'Google Maps link',
               subType: 'Subscription type',
+              renewDays: 'New number of days',
+              renewSubType: 'New subscription type',
             },
             subTypes: {
               mixed_plus: 'Mixed+',
@@ -286,6 +313,9 @@
             closeActions: 'বন্ধ করুন',
             addCustomerAlert: 'নাম এবং ফোন নম্বর দিন',
             noCustomersToPrint: 'প্রিন্ট করার মতো কোনো কাস্টমার নেই',
+            renewTitle: 'সাবস্ক্রিপশন নবায়ন',
+            renewConfirm: 'নবায়ন',
+            renewCancel: 'বাতিল',
             status: {
               active: 'সক্রিয়',
               paused: 'স্থগিত',
@@ -304,6 +334,8 @@
               days: 'ডেলিভারি দিনের সংখ্যা',
               maps: 'গুগল ম্যাপস লিংক',
               subType: 'সাবস্ক্রিপশন ধরন',
+              renewDays: 'নতুন দিনের সংখ্যা',
+              renewSubType: 'নতুন সাবস্ক্রিপশন ধরন',
             },
             subTypes: {
               mixed_plus: 'মিশ্র+',
@@ -340,6 +372,9 @@
             closeActions: 'بند کریں',
             addCustomerAlert: 'براہ کرم نام اور فون نمبر درج کریں',
             noCustomersToPrint: 'پرنٹ کرنے کے لئے کوئی کسٹمر نہیں',
+            renewTitle: 'سبسکرپشن ری نیو کریں',
+            renewConfirm: 'ری نیو',
+            renewCancel: 'منسوخ کریں',
             status: {
               active: 'فعال',
               paused: 'عارضی طور پر موقوف',
@@ -358,6 +393,8 @@
               days: 'ڈیلیوری دنوں کی تعداد',
               maps: 'گوگل میپس لنک',
               subType: 'سبسکرپشن کی قسم',
+              renewDays: 'نئے دنوں کی تعداد',
+              renewSubType: 'نئی سبسکرپشن کی قسم',
             },
             subTypes: {
               mixed_plus: 'مکس+',
@@ -370,7 +407,7 @@
               plusDay: 'ایک دن بڑھائیں',
               pause: 'موقوف کریں',
               resume: 'فعال کریں',
-              end: 'سبسکرپشن ختم کریں',
+              end: 'سبسکرپশন ختم کریں',
               renew: 'سبسکرپشن ری نیو کریں',
             }
           }
@@ -418,11 +455,21 @@
           document.getElementById('cust-days').placeholder = t.placeholders.days;
           document.getElementById('cust-maps').placeholder = t.placeholders.maps;
 
-          // تحديث نص خيارات نوع الاشتراك حسب اللغة
+          document.getElementById('renew-days').placeholder = t.placeholders.renewDays;
+          document.getElementById('ui-renew-title').textContent = t.renewTitle;
+          document.getElementById('ui-btn-renew-confirm').textContent = t.renewConfirm;
+          document.getElementById('ui-btn-renew-cancel').textContent = t.renewCancel;
+
+          // نوع الاشتراك في الإضافة والتجديد
           const subSelect = document.getElementById('cust-sub-type');
           subSelect.options[0].text = t.subTypes.mixed_plus;
           subSelect.options[1].text = t.subTypes.mixed;
           subSelect.options[2].text = t.subTypes.chicken;
+
+          const renewSubSelect = document.getElementById('renew-sub-type');
+          renewSubSelect.options[0].text = t.subTypes.mixed_plus;
+          renewSubSelect.options[1].text = t.subTypes.mixed;
+          renewSubSelect.options[2].text = t.subTypes.chicken;
 
           const pageTitleEl = document.getElementById('page-title');
           if (currentStatusFilter && t.pageTitles[currentStatusFilter]) {
@@ -459,6 +506,7 @@
         let currentListData = [];
         let currentStatusFilter = 'active';
         let selectedCustomer = null;
+        let renewCustomer = null;
 
         const getTodayDateString = () => {
             const d = new Date();
@@ -475,7 +523,6 @@
 
         const maybeDecreaseDayForCustomer = async (customer) => {
             if (customer.status !== 'active') return;
-
             if (typeof customer.deliveryDays !== 'number' || customer.deliveryDays <= 0) return;
 
             const today = getTodayDateString();
@@ -674,6 +721,67 @@
             setTimeout(() => { window.print(); }, 500);
         };
 
+        // تجديد
+        window.openRenewModal = (customer) => {
+            renewCustomer = customer;
+            const t = translations[currentLang];
+            document.getElementById('renew-days').value = '';
+            document.getElementById('renew-sub-type').value = customer.subscriptionType || 'mixed_plus';
+            document.getElementById('ui-renew-title').textContent = t.renewTitle;
+            document.getElementById('ui-btn-renew-confirm').textContent = t.renewConfirm;
+            document.getElementById('ui-btn-renew-cancel').textContent = t.renewCancel;
+            document.getElementById('renew-days').placeholder = t.placeholders.renewDays;
+            document.getElementById('renew-modal').classList.remove('hidden');
+        };
+
+        window.closeRenewModal = () => {
+            document.getElementById('renew-modal').classList.add('hidden');
+            renewCustomer = null;
+        };
+
+        window.confirmRenew = async () => {
+            if (!renewCustomer) return;
+            const t = translations[currentLang];
+            const daysStr = document.getElementById('renew-days').value;
+            const subType = document.getElementById('renew-sub-type').value;
+
+            if (!daysStr) {
+                alert(t.placeholders.renewDays);
+                return;
+            }
+
+            const newDays = Number(daysStr);
+
+            const updateData = {
+                status: 'active',
+                deliveryDays: newDays,
+                remainingDays: newDays,
+                subscriptionType: subType,
+                lastDeliveryDate: null,
+            };
+
+            await updateDoc(doc(db, "customers", renewCustomer.id), updateData);
+
+            window.closeRenewModal();
+            window.showPage('active');
+        };
+
+        window.openActionsMenu = (id) => {
+            const c = currentListData.find(x => x.id === id);
+            if (!c) return;
+            selectedCustomer = c;
+
+            const t = translations[currentLang];
+            const menu = document.getElementById('actions-menu');
+            const info = document.getElementById('menu-info');
+            const btnPrint = document.getElementById('menu-print-one');
+            const btnMinusDay = document.getElementById('menu-minus-day');
+            const btnPlusDay = document.getElementById('menu-plus-day');
+            const btnSecond = document.getElementById('menu-second');
+            const btnThird = document.getElementById('menu-third');
+
+            document.getElementById('ui-actions-title').textContent = t.actionsTitle;
+            document.getElementById('ui-btn-close-actions').textContent = t.closeActions
         window.openActionsMenu = (id) => {
             const c = currentListData.find(x => x.id === id);
             if (!c) return;
@@ -706,11 +814,13 @@
                 info.classList.add('hidden');
             }
 
+            // طباعة هذا العميل فقط
             btnPrint.onclick = () => {
                 window.printSingleCustomer(selectedCustomer);
                 window.closeActionsMenu();
             };
 
+            // خصم يوم يدوي
             btnMinusDay.onclick = async () => {
                 const currentRemaining =
                     typeof c.remainingDays === 'number'
@@ -720,10 +830,7 @@
                 let newRemaining = currentRemaining - 1;
                 if (newRemaining < 0) newRemaining = 0;
 
-                const updateData = {
-                    remainingDays: newRemaining
-                };
-
+                const updateData = { remainingDays: newRemaining };
                 if (newRemaining === 0) {
                     updateData.status = 'expired';
                 }
@@ -732,6 +839,7 @@
                 window.closeActionsMenu();
             };
 
+            // إضافة يوم يدوي
             btnPlusDay.onclick = async () => {
                 const currentRemaining =
                     typeof c.remainingDays === 'number'
@@ -747,6 +855,7 @@
                 window.closeActionsMenu();
             };
 
+            // أزرار الحالة (إيقاف / تفعيل / إنهاء / تجديد)
             btnSecond.classList.add('hidden');
             btnThird.classList.add('hidden');
 
@@ -781,17 +890,10 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'expired') {
+                // هنا نستبدل التجديد القديم بفتح نافذة التجديد الجديدة
                 btnSecond.textContent = t.menu.renew;
-                btnSecond.onclick = async () => {
-                    let newRemaining = typeof c.deliveryDays === 'number' ? c.deliveryDays : null;
-                    const updateData = {
-                        status: 'active',
-                        lastDeliveryDate: null
-                    };
-                    if (newRemaining !== null) {
-                        updateData.remainingDays = newRemaining;
-                    }
-                    await updateDoc(doc(db, "customers", c.id), updateData);
+                btnSecond.onclick = () => {
+                    window.openRenewModal(c);
                     window.closeActionsMenu();
                 };
                 btnSecond.classList.remove('hidden');
