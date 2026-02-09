@@ -766,23 +766,7 @@
             window.showPage('active');
         };
 
-        window.openActionsMenu = (id) => {
-            const c = currentListData.find(x => x.id === id);
-            if (!c) return;
-            selectedCustomer = c;
-
-            const t = translations[currentLang];
-            const menu = document.getElementById('actions-menu');
-            const info = document.getElementById('menu-info');
-            const btnPrint = document.getElementById('menu-print-one');
-            const btnMinusDay = document.getElementById('menu-minus-day');
-            const btnPlusDay = document.getElementById('menu-plus-day');
-            const btnSecond = document.getElementById('menu-second');
-            const btnThird = document.getElementById('menu-third');
-
-            document.getElementById('ui-actions-title').textContent = t.actionsTitle;
-            document.getElementById('ui-btn-close-actions').textContent = t.closeActions
-        window.openActionsMenu = (id) => {
+                window.openActionsMenu = (id) => {
             const c = currentListData.find(x => x.id === id);
             if (!c) return;
             selectedCustomer = c;
