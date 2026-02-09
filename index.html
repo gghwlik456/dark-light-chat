@@ -108,6 +108,14 @@
                 <input type="text" id="cust-district" class="w-full p-3 border rounded-xl outline-none">
                 <input type="number" id="cust-days" class="w-full p-3 border rounded-xl outline-none" min="1">
                 <input type="text" id="cust-maps" class="w-full p-3 border rounded-xl outline-none">
+
+                <!-- نوع الاشتراك -->
+                <select id="cust-sub-type" class="w-full p-3 border rounded-xl outline-none">
+                    <option value="mixed_plus">منوع+</option>
+                    <option value="mixed">منوع</option>
+                    <option value="chicken">دجاج</option>
+                </select>
+
                 <button onclick="window.saveCustomer()" id="ui-btn-save" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
                 <button onclick="window.closeModal()" id="ui-btn-cancel" class="w-full text-gray-400">إلغاء</button>
             </div>
@@ -179,6 +187,7 @@
               district: 'الحي',
               remainingDays: 'أيام التوصيل المتبقية',
               totalDays: 'أيام التوصيل',
+              subType: 'نوع الاشتراك',
             },
             placeholders: {
               name: 'اسم العميل',
@@ -186,6 +195,12 @@
               district: 'الحي',
               days: 'عدد أيام التوصيل',
               maps: 'رابط خرائط قوقل',
+              subType: 'نوع الاشتراك',
+            },
+            subTypes: {
+              mixed_plus: 'منوع+',
+              mixed: 'منوع',
+              chicken: 'دجاج',
             },
             menu: {
               printOne: 'طباعة هذا العميل فقط',
@@ -226,6 +241,7 @@
               district: 'District',
               remainingDays: 'Remaining delivery days',
               totalDays: 'Delivery days',
+              subType: 'Plan type',
             },
             placeholders: {
               name: 'Customer name',
@@ -233,6 +249,12 @@
               district: 'District',
               days: 'Number of delivery days',
               maps: 'Google Maps link',
+              subType: 'Subscription type',
+            },
+            subTypes: {
+              mixed_plus: 'Mixed+',
+              mixed: 'Mixed',
+              chicken: 'Chicken',
             },
             menu: {
               printOne: 'Print this customer only',
@@ -273,6 +295,7 @@
               district: 'এলাকা',
               remainingDays: 'বাকি ডেলিভারি দিন',
               totalDays: 'ডেলিভারি দিন',
+              subType: 'সাবস্ক্রিপশন ধরন',
             },
             placeholders: {
               name: 'কাস্টমারের নাম',
@@ -280,6 +303,12 @@
               district: 'এলাকা',
               days: 'ডেলিভারি দিনের সংখ্যা',
               maps: 'গুগল ম্যাপস লিংক',
+              subType: 'সাবস্ক্রিপশন ধরন',
+            },
+            subTypes: {
+              mixed_plus: 'মিশ্র+',
+              mixed: 'মিশ্র',
+              chicken: 'মুরগি',
             },
             menu: {
               printOne: 'শুধু এই কাস্টমার প্রিন্ট করুন',
@@ -294,7 +323,7 @@
           ur: {
             langLabel: 'اُردو',
             langTitle: 'زبان منتخب کریں',
-            appDesc: 'سبسکرپশন مینجمنٹ سسٹم',
+            appDesc: 'سبسکرپشن مینجمنٹ سسٹم',
             homeMenuActive: 'روزانہ ڈیلیوری',
             homeMenuPaused: 'موقوف',
             homeMenuExpired: 'ختم شدہ',
@@ -320,6 +349,7 @@
               district: 'علاقہ',
               remainingDays: 'باقی ڈیلیوری دن',
               totalDays: 'ڈیلیوری دن',
+              subType: 'سبسکرپشن کی قسم',
             },
             placeholders: {
               name: 'کسٹمر کا نام',
@@ -327,6 +357,12 @@
               district: 'علاقہ',
               days: 'ڈیلیوری دنوں کی تعداد',
               maps: 'گوگل میپس لنک',
+              subType: 'سبسکرپشن کی قسم',
+            },
+            subTypes: {
+              mixed_plus: 'مکس+',
+              mixed: 'مکس',
+              chicken: 'چکن',
             },
             menu: {
               printOne: 'صرف اسی کسٹمر کو پرنٹ کریں',
@@ -375,12 +411,18 @@
           document.getElementById('menu-minus-day').textContent = t.menu.minusDay;
           document.getElementById('menu-plus-day').textContent = t.menu.plusDay;
 
-          // placeholders حق خانات الإضافة
+          // placeholders
           document.getElementById('cust-name').placeholder = t.placeholders.name;
           document.getElementById('cust-phone').placeholder = t.placeholders.phone;
           document.getElementById('cust-district').placeholder = t.placeholders.district;
           document.getElementById('cust-days').placeholder = t.placeholders.days;
           document.getElementById('cust-maps').placeholder = t.placeholders.maps;
+
+          // تحديث نص خيارات نوع الاشتراك حسب اللغة
+          const subSelect = document.getElementById('cust-sub-type');
+          subSelect.options[0].text = t.subTypes.mixed_plus;
+          subSelect.options[1].text = t.subTypes.mixed;
+          subSelect.options[2].text = t.subTypes.chicken;
 
           const pageTitleEl = document.getElementById('page-title');
           if (currentStatusFilter && t.pageTitles[currentStatusFilter]) {
@@ -400,7 +442,7 @@
           window.closeLangModal();
         };
 
-        // ---------- Firebase & المنطق (نفس السابق) ----------
+        // ---------- Firebase والمنطق ----------
         const firebaseConfig = {
             apiKey: "AIzaSyBxXXn9SCHhhx-Zu729uKtNUtt5QUWC1e4",
             authDomain: "qawim-41d04.firebaseapp.com",
@@ -528,10 +570,15 @@
                         daysText = `${t.labels.totalDays}: ${c.deliveryDays}`;
                     }
 
+                    const subTypeLabel = c.subscriptionType
+                      ? translations[currentLang].subTypes[c.subscriptionType] || c.subscriptionType
+                      : '';
+
                     table.innerHTML += `
                         <tr class="hover:bg-gray-50 transition">
                             <td class="p-4 font-bold text-gray-800">
                                 ${c.name}
+                                ${subTypeLabel ? `<span class="ml-2 text-xs text-blue-500">(${subTypeLabel})</span>` : ''}
                                 <span class="ml-2 text-xs ${statusColorClass}">(${statusLabel})</span><br>
                                 <small class="text-gray-400 font-normal">${c.phone}</small>
                                 ${c.district ? `<br><small class="text-gray-500 font-normal">${t.labels.district}: ${c.district}</small>` : ''}
@@ -556,6 +603,7 @@
             const district = document.getElementById('cust-district').value;
             const daysStr = document.getElementById('cust-days').value;
             const mapsUrl = document.getElementById('cust-maps').value;
+            const subType = document.getElementById('cust-sub-type').value;
 
             if (!name || !phone) return alert(t.addCustomerAlert);
 
@@ -566,6 +614,7 @@
                 phone,
                 district,
                 mapsUrl,
+                subscriptionType: subType,
                 deliveryDays,
                 remainingDays: deliveryDays,
                 status: 'active',
@@ -578,6 +627,7 @@
             document.getElementById('cust-district').value = '';
             document.getElementById('cust-days').value = '';
             document.getElementById('cust-maps').value = '';
+            document.getElementById('cust-sub-type').value = 'mixed_plus';
         };
 
         window.changeStatus = async (id, newStatus) => {
@@ -599,10 +649,14 @@
             printArea.innerHTML = '';
 
             list.forEach(c => {
+                const subTypeLabel = c.subscriptionType
+                  ? translations[currentLang].subTypes[c.subscriptionType] || c.subscriptionType
+                  : '';
+
                 const item = document.createElement('div');
                 item.className = 'label-item';
                 item.innerHTML = `
-                    <div style="font-size: 22px; font-weight: bold;">${c.name}</div>
+                    <div style="font-size: 22px; font-weight: bold;">${c.name}${subTypeLabel ? ' - ' + subTypeLabel : ''}</div>
                     <div style="font-size: 18px; margin: 5px 0;">${c.phone}</div>
                     <div id="qr-${c.id}" style="display: flex; justify-content: center; margin: 15px 0;"></div>
                     ${c.district ? `<div style="font-size: 14px; margin-top: 5px;">${translations[currentLang].labels.district}: ${c.district}</div>` : ''}
@@ -763,6 +817,7 @@
             document.getElementById('cust-district').value = '';
             document.getElementById('cust-days').value = '';
             document.getElementById('cust-maps').value = '';
+            document.getElementById('cust-sub-type').value = 'mixed_plus';
             document.getElementById('modal').classList.remove('hidden');
         };
 
