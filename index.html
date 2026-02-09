@@ -20,7 +20,7 @@
 </head>
 <body>
 
-    <!-- زر اللغة (ثابت في الزاوية) -->
+    <!-- زر اللغة -->
     <button
       onclick="window.openLangModal()"
       class="no-print fixed top-4 left-4 z-50 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full border border-gray-300">
@@ -103,11 +103,11 @@
         <div class="bg-white w-full max-w-md rounded-2xl p-6">
             <h3 id="ui-add-title" class="text-xl font-bold mb-4">إضافة عميل جديد</h3>
             <div class="space-y-4">
-                <input type="text" id="cust-name" placeholder="اسم العميل" class="w-full p-3 border rounded-xl outline-none">
-                <input type="tel" id="cust-phone" placeholder="رقم الجوال" class="w-full p-3 border rounded-xl outline-none">
-                <input type="text" id="cust-district" placeholder="الحي" class="w-full p-3 border rounded-xl outline-none">
-                <input type="number" id="cust-days" placeholder="عدد أيام التوصيل" class="w-full p-3 border rounded-xl outline-none" min="1">
-                <input type="text" id="cust-maps" placeholder="رابط خرائط قوقل" class="w-full p-3 border rounded-xl outline-none">
+                <input type="text" id="cust-name" class="w-full p-3 border rounded-xl outline-none">
+                <input type="tel" id="cust-phone" class="w-full p-3 border rounded-xl outline-none">
+                <input type="text" id="cust-district" class="w-full p-3 border rounded-xl outline-none">
+                <input type="number" id="cust-days" class="w-full p-3 border rounded-xl outline-none" min="1">
+                <input type="text" id="cust-maps" class="w-full p-3 border rounded-xl outline-none">
                 <button onclick="window.saveCustomer()" id="ui-btn-save" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
                 <button onclick="window.closeModal()" id="ui-btn-cancel" class="w-full text-gray-400">إلغاء</button>
             </div>
@@ -148,7 +148,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ---------- إعداد اللغات ----------
+        // ---------- الترجمة ----------
         const translations = {
           ar: {
             langLabel: 'عربي',
@@ -179,6 +179,13 @@
               district: 'الحي',
               remainingDays: 'أيام التوصيل المتبقية',
               totalDays: 'أيام التوصيل',
+            },
+            placeholders: {
+              name: 'اسم العميل',
+              phone: 'رقم الجوال',
+              district: 'الحي',
+              days: 'عدد أيام التوصيل',
+              maps: 'رابط خرائط قوقل',
             },
             menu: {
               printOne: 'طباعة هذا العميل فقط',
@@ -220,6 +227,13 @@
               remainingDays: 'Remaining delivery days',
               totalDays: 'Delivery days',
             },
+            placeholders: {
+              name: 'Customer name',
+              phone: 'Phone number',
+              district: 'District',
+              days: 'Number of delivery days',
+              maps: 'Google Maps link',
+            },
             menu: {
               printOne: 'Print this customer only',
               minusDay: 'Deduct one day',
@@ -260,6 +274,13 @@
               remainingDays: 'বাকি ডেলিভারি দিন',
               totalDays: 'ডেলিভারি দিন',
             },
+            placeholders: {
+              name: 'কাস্টমারের নাম',
+              phone: 'ফোন নম্বর',
+              district: 'এলাকা',
+              days: 'ডেলিভারি দিনের সংখ্যা',
+              maps: 'গুগল ম্যাপস লিংক',
+            },
             menu: {
               printOne: 'শুধু এই কাস্টমার প্রিন্ট করুন',
               minusDay: 'একদিন কমান',
@@ -273,7 +294,7 @@
           ur: {
             langLabel: 'اُردو',
             langTitle: 'زبان منتخب کریں',
-            appDesc: 'سبسکرپشن مینجمنٹ سسٹم',
+            appDesc: 'سبسکرپশন مینجمنٹ سسٹم',
             homeMenuActive: 'روزانہ ڈیلیوری',
             homeMenuPaused: 'موقوف',
             homeMenuExpired: 'ختم شدہ',
@@ -300,6 +321,13 @@
               remainingDays: 'باقی ڈیلیوری دن',
               totalDays: 'ڈیلیوری دن',
             },
+            placeholders: {
+              name: 'کسٹمر کا نام',
+              phone: 'فون نمبر',
+              district: 'علاقہ',
+              days: 'ڈیلیوری دنوں کی تعداد',
+              maps: 'گوگل میپس لنک',
+            },
             menu: {
               printOne: 'صرف اسی کسٹمر کو پرنٹ کریں',
               minusDay: 'ایک دن کم کریں',
@@ -317,7 +345,6 @@
         const applyLanguage = () => {
           const t = translations[currentLang];
 
-          // اتجاه الصفحة
           if (currentLang === 'en' || currentLang === 'bn') {
             document.documentElement.lang = currentLang;
             document.documentElement.dir = 'ltr';
@@ -326,7 +353,6 @@
             document.documentElement.dir = 'rtl';
           }
 
-          // اسم النظام يبقى Qawim
           document.getElementById('ui-app-name').textContent = 'Qawim';
           document.getElementById('ui-app-desc').textContent = t.appDesc;
 
@@ -349,7 +375,13 @@
           document.getElementById('menu-minus-day').textContent = t.menu.minusDay;
           document.getElementById('menu-plus-day').textContent = t.menu.plusDay;
 
-          // تحديث عنوان صفحة القائمة حسب الحالة الحالية
+          // placeholders حق خانات الإضافة
+          document.getElementById('cust-name').placeholder = t.placeholders.name;
+          document.getElementById('cust-phone').placeholder = t.placeholders.phone;
+          document.getElementById('cust-district').placeholder = t.placeholders.district;
+          document.getElementById('cust-days').placeholder = t.placeholders.days;
+          document.getElementById('cust-maps').placeholder = t.placeholders.maps;
+
           const pageTitleEl = document.getElementById('page-title');
           if (currentStatusFilter && t.pageTitles[currentStatusFilter]) {
             pageTitleEl.textContent = t.pageTitles[currentStatusFilter];
@@ -368,7 +400,7 @@
           window.closeLangModal();
         };
 
-        // ---------- Firebase & منطق النظام كما كان (مع اللغة) ----------
+        // ---------- Firebase & المنطق (نفس السابق) ----------
         const firebaseConfig = {
             apiKey: "AIzaSyBxXXn9SCHhhx-Zu729uKtNUtt5QUWC1e4",
             authDomain: "qawim-41d04.firebaseapp.com",
@@ -737,7 +769,7 @@
         window.closeModal = () =>
             document.getElementById('modal').classList.add('hidden');
 
-        // تفعيل العربية كبداية
+        // بدء بالعربية
         applyLanguage();
     </script>
 </body>
