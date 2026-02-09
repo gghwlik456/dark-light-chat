@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام Qawim - الإصدار المعتمد</title>
+    <title>Qawim - Subscription System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -20,9 +20,41 @@
 </head>
 <body>
 
+    <!-- زر اللغة (ثابت في الزاوية) -->
+    <button
+      onclick="window.openLangModal()"
+      class="no-print fixed top-4 left-4 z-50 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm px-3 py-1 rounded-full border border-gray-300">
+      🌐 <span id="ui-lang-label">عربي</span>
+    </button>
+
+    <!-- نافذة اختيار اللغة -->
+    <div id="lang-modal" class="hidden fixed inset-0 bg-black/40 no-print flex items-center justify-center z-40">
+      <div class="bg-white rounded-2xl w-full max-w-xs p-4 space-y-3 text-right">
+        <div class="font-bold text-lg mb-2" id="ui-lang-title">اختيار اللغة</div>
+        <button onclick="window.setLanguage('ar')" class="w-full px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-right">
+          عربي
+        </button>
+        <button onclick="window.setLanguage('en')" class="w-full px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-right">
+          English
+        </button>
+        <button onclick="window.setLanguage('bn')" class="w-full px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-right">
+          বাংলা
+        </button>
+        <button onclick="window.setLanguage('ur')" class="w-full px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-right">
+          اردو
+        </button>
+        <button onclick="window.closeLangModal()" class="w-full px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
+          إغلاق / Close
+        </button>
+      </div>
+    </div>
+
     <!-- الصفحة الرئيسية -->
     <div id="home-page" class="h-screen flex flex-col items-center justify-center space-y-12 no-print">
-        <h1 class="text-3xl font-bold text-gray-800 tracking-tight">نظام إدارة اشتراكات Qawim</h1>
+        <h1 class="text-3xl font-bold text-gray-800 tracking-tight">
+            <span id="ui-app-name">Qawim</span> -
+            <span id="ui-app-desc">نظام إدارة اشتراكات</span>
+        </h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <button onclick="window.showPage('active')" class="group">
                 <div class="w-40 h-40 bg-green-500 rounded-3xl flex items-center justify-center shadow-lg hover:scale-105 transition">
@@ -30,7 +62,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
                     </svg>
                 </div>
-                <p class="mt-4 font-bold text-green-600">التوصيل اليومي</p>
+                <p id="ui-menu-active" class="mt-4 font-bold text-green-600">التوصيل اليومي</p>
             </button>
             <button onclick="window.showPage('paused')" class="group">
                 <div class="w-40 h-40 bg-red-500 rounded-3xl flex items-center justify-center shadow-lg hover:scale-105 transition">
@@ -38,13 +70,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <p class="mt-4 font-bold text-red-600">المتوقفة</p>
+                <p id="ui-menu-paused" class="mt-4 font-bold text-red-600">المتوقفة</p>
             </button>
             <button onclick="window.showPage('expired')" class="group">
                 <div class="w-40 h-40 bg-gray-200 rounded-3xl flex items-center justify-center border hover:scale-105 transition">
                     <span class="text-4xl font-bold text-gray-400">X</span>
                 </div>
-                <p class="mt-4 font-bold text-gray-400">المنتهية</p>
+                <p id="ui-menu-expired" class="mt-4 font-bold text-gray-400">المنتهية</p>
             </button>
         </div>
     </div>
@@ -57,7 +89,7 @@
                 <button id="print-btn" onclick="window.printLabels()" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">🖨️</button>
             </div>
             <h2 id="page-title" class="text-2xl font-bold"></h2>
-            <button onclick="window.goHome()" class="text-blue-500 font-bold">الرئيسية</button>
+            <button onclick="window.goHome()" id="ui-btn-home" class="text-blue-500 font-bold">الرئيسية</button>
         </div>
         <div class="bg-white border rounded-2xl overflow-hidden shadow-sm">
             <table class="w-full text-right">
@@ -69,15 +101,15 @@
     <!-- نافذة إضافة عميل جديد -->
     <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-md rounded-2xl p-6">
-            <h3 class="text-xl font-bold mb-4">إضافة عميل جديد</h3>
+            <h3 id="ui-add-title" class="text-xl font-bold mb-4">إضافة عميل جديد</h3>
             <div class="space-y-4">
                 <input type="text" id="cust-name" placeholder="اسم العميل" class="w-full p-3 border rounded-xl outline-none">
                 <input type="tel" id="cust-phone" placeholder="رقم الجوال" class="w-full p-3 border rounded-xl outline-none">
                 <input type="text" id="cust-district" placeholder="الحي" class="w-full p-3 border rounded-xl outline-none">
                 <input type="number" id="cust-days" placeholder="عدد أيام التوصيل" class="w-full p-3 border rounded-xl outline-none" min="1">
                 <input type="text" id="cust-maps" placeholder="رابط خرائط قوقل" class="w-full p-3 border rounded-xl outline-none">
-                <button onclick="window.saveCustomer()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
-                <button onclick="window.closeModal()" class="w-full text-gray-400">إلغاء</button>
+                <button onclick="window.saveCustomer()" id="ui-btn-save" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold">حفظ العميل</button>
+                <button onclick="window.closeModal()" id="ui-btn-cancel" class="w-full text-gray-400">إلغاء</button>
             </div>
         </div>
     </div>
@@ -88,19 +120,17 @@
     <!-- منيو ثلاث النقاط -->
     <div id="actions-menu" class="hidden fixed inset-0 bg-black/30 no-print flex items-center justify-center z-40">
         <div class="bg-white rounded-2xl w-full max-w-xs p-4 space-y-2">
-            <div class="font-bold text-lg mb-2 text-right">خيارات العميل</div>
+            <div id="ui-actions-title" class="font-bold text-lg mb-2 text-right">خيارات العميل</div>
             <div id="menu-info" class="text-xs text-gray-600 text-right mb-1 hidden"></div>
 
             <button id="menu-print-one" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 طباعة هذا العميل فقط
             </button>
 
-            <!-- خصم يوم -->
             <button id="menu-minus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 خصم يوم توصيل
             </button>
 
-            <!-- إضافة يوم -->
             <button id="menu-plus-day" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm">
                 إضافة يوم توصيل
             </button>
@@ -108,7 +138,7 @@
             <button id="menu-second" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
             <button id="menu-third" class="w-full text-right px-3 py-2 rounded-lg hover:bg-gray-100 text-sm hidden"></button>
 
-            <button onclick="window.closeActionsMenu()" class="w-full text-center px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
+            <button onclick="window.closeActionsMenu()" id="ui-btn-close-actions" class="w-full text-center px-3 py-2 rounded-lg text-gray-400 text-sm mt-1">
                 إغلاق
             </button>
         </div>
@@ -118,6 +148,227 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // ---------- إعداد اللغات ----------
+        const translations = {
+          ar: {
+            langLabel: 'عربي',
+            langTitle: 'اختيار اللغة',
+            appDesc: 'نظام إدارة اشتراكات',
+            homeMenuActive: 'التوصيل اليومي',
+            homeMenuPaused: 'المتوقفة',
+            homeMenuExpired: 'المنتهية',
+            pageTitles: {
+              active: 'التوصيل اليومي',
+              paused: 'الاشتراكات المتوقفة',
+              expired: 'الاشتراكات المنتهية',
+            },
+            btnHome: 'الرئيسية',
+            addTitle: 'إضافة عميل جديد',
+            saveBtn: 'حفظ العميل',
+            cancelBtn: 'إلغاء',
+            actionsTitle: 'خيارات العميل',
+            closeActions: 'إغلاق',
+            addCustomerAlert: 'يرجى إدخال الاسم والجوال',
+            noCustomersToPrint: 'لا يوجد عملاء للطباعة',
+            status: {
+              active: 'فعال',
+              paused: 'متوقف مؤقتًا',
+              expired: 'منتهي',
+            },
+            labels: {
+              district: 'الحي',
+              remainingDays: 'أيام التوصيل المتبقية',
+              totalDays: 'أيام التوصيل',
+            },
+            menu: {
+              printOne: 'طباعة هذا العميل فقط',
+              minusDay: 'خصم يوم توصيل',
+              plusDay: 'إضافة يوم توصيل',
+              pause: 'إيقاف مؤقت',
+              resume: 'تفعيل',
+              end: 'إنهاء الاشتراك',
+              renew: 'تجديد الحساب',
+            }
+          },
+          en: {
+            langLabel: 'English',
+            langTitle: 'Choose Language',
+            appDesc: 'Subscription Management System',
+            homeMenuActive: 'Daily Delivery',
+            homeMenuPaused: 'Paused',
+            homeMenuExpired: 'Expired',
+            pageTitles: {
+              active: 'Daily Delivery',
+              paused: 'Paused Subscriptions',
+              expired: 'Expired Subscriptions',
+            },
+            btnHome: 'Home',
+            addTitle: 'Add New Customer',
+            saveBtn: 'Save Customer',
+            cancelBtn: 'Cancel',
+            actionsTitle: 'Customer Options',
+            closeActions: 'Close',
+            addCustomerAlert: 'Please enter name and phone',
+            noCustomersToPrint: 'No customers to print',
+            status: {
+              active: 'Active',
+              paused: 'Paused',
+              expired: 'Expired',
+            },
+            labels: {
+              district: 'District',
+              remainingDays: 'Remaining delivery days',
+              totalDays: 'Delivery days',
+            },
+            menu: {
+              printOne: 'Print this customer only',
+              minusDay: 'Deduct one day',
+              plusDay: 'Add one day',
+              pause: 'Pause',
+              resume: 'Activate',
+              end: 'End subscription',
+              renew: 'Renew subscription',
+            }
+          },
+          bn: {
+            langLabel: 'বাংলা',
+            langTitle: 'ভাষা নির্বাচন করুন',
+            appDesc: 'সাবস্ক্রিপশন ম্যানেজমেন্ট সিস্টেম',
+            homeMenuActive: 'দৈনিক ডেলিভারি',
+            homeMenuPaused: 'স্থগিত',
+            homeMenuExpired: 'মেয়াদ শেষ',
+            pageTitles: {
+              active: 'দৈনিক ডেলিভারি',
+              paused: 'স্থগিত সাবস্ক্রিপশন',
+              expired: 'মেয়াদোত্তীর্ণ সাবস্ক্রিপশন',
+            },
+            btnHome: 'হোম',
+            addTitle: 'নতুন কাস্টমার যুক্ত করুন',
+            saveBtn: 'কাস্টমার সংরক্ষণ করুন',
+            cancelBtn: 'বাতিল',
+            actionsTitle: 'কাস্টমার বিকল্প',
+            closeActions: 'বন্ধ করুন',
+            addCustomerAlert: 'নাম এবং ফোন নম্বর দিন',
+            noCustomersToPrint: 'প্রিন্ট করার মতো কোনো কাস্টমার নেই',
+            status: {
+              active: 'সক্রিয়',
+              paused: 'স্থগিত',
+              expired: 'মেয়াদোত্তীর্ণ',
+            },
+            labels: {
+              district: 'এলাকা',
+              remainingDays: 'বাকি ডেলিভারি দিন',
+              totalDays: 'ডেলিভারি দিন',
+            },
+            menu: {
+              printOne: 'শুধু এই কাস্টমার প্রিন্ট করুন',
+              minusDay: 'একদিন কমান',
+              plusDay: 'একদিন যোগ করুন',
+              pause: 'স্থগিত করুন',
+              resume: 'সক্রিয় করুন',
+              end: 'সাবস্ক্রিপশন শেষ করুন',
+              renew: 'সাবস্ক্রিপশন নবায়ন',
+            }
+          },
+          ur: {
+            langLabel: 'اُردو',
+            langTitle: 'زبان منتخب کریں',
+            appDesc: 'سبسکرپشن مینجمنٹ سسٹم',
+            homeMenuActive: 'روزانہ ڈیلیوری',
+            homeMenuPaused: 'موقوف',
+            homeMenuExpired: 'ختم شدہ',
+            pageTitles: {
+              active: 'روزانہ ڈیلیوری',
+              paused: 'موقوف سبسکرپشنز',
+              expired: 'ختم شدہ سبسکرپشنز',
+            },
+            btnHome: 'ہوم',
+            addTitle: 'نیا کسٹمر شامل کریں',
+            saveBtn: 'کسٹمر محفوظ کریں',
+            cancelBtn: 'منسوخ کریں',
+            actionsTitle: 'کسٹمر آپشنز',
+            closeActions: 'بند کریں',
+            addCustomerAlert: 'براہ کرم نام اور فون نمبر درج کریں',
+            noCustomersToPrint: 'پرنٹ کرنے کے لئے کوئی کسٹمر نہیں',
+            status: {
+              active: 'فعال',
+              paused: 'عارضی طور پر موقوف',
+              expired: 'ختم شدہ',
+            },
+            labels: {
+              district: 'علاقہ',
+              remainingDays: 'باقی ڈیلیوری دن',
+              totalDays: 'ڈیلیوری دن',
+            },
+            menu: {
+              printOne: 'صرف اسی کسٹمر کو پرنٹ کریں',
+              minusDay: 'ایک دن کم کریں',
+              plusDay: 'ایک دن بڑھائیں',
+              pause: 'موقوف کریں',
+              resume: 'فعال کریں',
+              end: 'سبسکرپشن ختم کریں',
+              renew: 'سبسکرپشن ری نیو کریں',
+            }
+          }
+        };
+
+        let currentLang = 'ar';
+
+        const applyLanguage = () => {
+          const t = translations[currentLang];
+
+          // اتجاه الصفحة
+          if (currentLang === 'en' || currentLang === 'bn') {
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = 'ltr';
+          } else {
+            document.documentElement.lang = currentLang;
+            document.documentElement.dir = 'rtl';
+          }
+
+          // اسم النظام يبقى Qawim
+          document.getElementById('ui-app-name').textContent = 'Qawim';
+          document.getElementById('ui-app-desc').textContent = t.appDesc;
+
+          document.getElementById('ui-lang-label').textContent = t.langLabel;
+          document.getElementById('ui-lang-title').textContent = t.langTitle;
+
+          document.getElementById('ui-menu-active').textContent = t.homeMenuActive;
+          document.getElementById('ui-menu-paused').textContent = t.homeMenuPaused;
+          document.getElementById('ui-menu-expired').textContent = t.homeMenuExpired;
+
+          document.getElementById('ui-btn-home').textContent = t.btnHome;
+          document.getElementById('ui-add-title').textContent = t.addTitle;
+          document.getElementById('ui-btn-save').textContent = t.saveBtn;
+          document.getElementById('ui-btn-cancel').textContent = t.cancelBtn;
+
+          document.getElementById('ui-actions-title').textContent = t.actionsTitle;
+          document.getElementById('ui-btn-close-actions').textContent = t.closeActions;
+
+          document.getElementById('menu-print-one').textContent = t.menu.printOne;
+          document.getElementById('menu-minus-day').textContent = t.menu.minusDay;
+          document.getElementById('menu-plus-day').textContent = t.menu.plusDay;
+
+          // تحديث عنوان صفحة القائمة حسب الحالة الحالية
+          const pageTitleEl = document.getElementById('page-title');
+          if (currentStatusFilter && t.pageTitles[currentStatusFilter]) {
+            pageTitleEl.textContent = t.pageTitles[currentStatusFilter];
+          }
+        };
+
+        window.openLangModal = () => {
+          document.getElementById('lang-modal').classList.remove('hidden');
+        };
+        window.closeLangModal = () => {
+          document.getElementById('lang-modal').classList.add('hidden');
+        };
+        window.setLanguage = (lang) => {
+          currentLang = lang;
+          applyLanguage();
+          window.closeLangModal();
+        };
+
+        // ---------- Firebase & منطق النظام كما كان (مع اللغة) ----------
         const firebaseConfig = {
             apiKey: "AIzaSyBxXXn9SCHhhx-Zu729uKtNUtt5QUWC1e4",
             authDomain: "qawim-41d04.firebaseapp.com",
@@ -145,13 +396,10 @@
 
         const isTodayFriday = () => {
             const d = new Date();
-            // 5 = الجمعة
             return d.getDay() === 5;
         };
 
-        // خصم يوم تلقائي لعميل معيّن – مع حماية إضافية للحالة
         const maybeDecreaseDayForCustomer = async (customer) => {
-            // ✅ لا ننقص إذا الحالة ليست فعالة
             if (customer.status !== 'active') return;
 
             if (typeof customer.deliveryDays !== 'number' || customer.deliveryDays <= 0) return;
@@ -195,12 +443,8 @@
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('list-page').classList.remove('hidden');
             
-            const titles = {
-                'active': 'التوصيل اليومي',
-                'paused': 'الاشتراكات المتوقفة',
-                'expired': 'الاشتراكات المنتهية'
-            };
-            document.getElementById('page-title').innerText = titles[status];
+            const t = translations[currentLang];
+            document.getElementById('page-title').innerText = t.pageTitles[status];
 
             document.getElementById('add-btn').classList.toggle('hidden', status !== 'active');
             document.getElementById('print-btn').classList.toggle('hidden', status !== 'active');
@@ -221,7 +465,6 @@
                     customersArr.push({ id, ...c });
                 });
 
-                // ✅ خصم الأيام تلقائي يتم فقط إذا كنا في قائمة "active"
                 if (status === 'active') {
                     for (const c of customersArr) {
                         await maybeDecreaseDayForCustomer(c);
@@ -231,25 +474,26 @@
                 customersArr.forEach(c => {
                     currentListData.push(c);
 
+                    const t = translations[currentLang];
                     let statusLabel = '';
                     let statusColorClass = '';
 
                     if (c.status === 'active') {
-                        statusLabel = 'فعال';
+                        statusLabel = t.status.active;
                         statusColorClass = 'text-green-600';
                     } else if (c.status === 'paused') {
-                        statusLabel = 'متوقف مؤقتًا';
+                        statusLabel = t.status.paused;
                         statusColorClass = 'text-red-600';
                     } else if (c.status === 'expired') {
-                        statusLabel = 'منتهي';
+                        statusLabel = t.status.expired;
                         statusColorClass = 'text-gray-600';
                     }
 
                     let daysText = '';
                     if (typeof c.remainingDays === 'number') {
-                        daysText = `أيام التوصيل المتبقية: ${c.remainingDays}`;
+                        daysText = `${t.labels.remainingDays}: ${c.remainingDays}`;
                     } else if (typeof c.deliveryDays === 'number') {
-                        daysText = `أيام التوصيل: ${c.deliveryDays}`;
+                        daysText = `${t.labels.totalDays}: ${c.deliveryDays}`;
                     }
 
                     table.innerHTML += `
@@ -258,7 +502,7 @@
                                 ${c.name}
                                 <span class="ml-2 text-xs ${statusColorClass}">(${statusLabel})</span><br>
                                 <small class="text-gray-400 font-normal">${c.phone}</small>
-                                ${c.district ? `<br><small class="text-gray-500 font-normal">الحي: ${c.district}</small>` : ''}
+                                ${c.district ? `<br><small class="text-gray-500 font-normal">${t.labels.district}: ${c.district}</small>` : ''}
                                 ${daysText ? `<br><small class="text-gray-500 font-normal">${daysText}</small>` : ''}
                             </td>
                             <td class="p-4 text-left">
@@ -274,13 +518,14 @@
         };
 
         window.saveCustomer = async () => {
+            const t = translations[currentLang];
             const name = document.getElementById('cust-name').value;
             const phone = document.getElementById('cust-phone').value;
             const district = document.getElementById('cust-district').value;
             const daysStr = document.getElementById('cust-days').value;
             const mapsUrl = document.getElementById('cust-maps').value;
 
-            if (!name || !phone) return alert("يرجى إدخال الاسم والجوال");
+            if (!name || !phone) return alert(t.addCustomerAlert);
 
             const deliveryDays = daysStr ? Number(daysStr) : null;
             
@@ -308,7 +553,8 @@
         };
 
         window.printLabels = () => {
-            if (currentListData.length === 0) return alert("لا يوجد عملاء للطباعة");
+            const t = translations[currentLang];
+            if (currentListData.length === 0) return alert(t.noCustomersToPrint);
             buildPrintArea(currentListData);
         };
 
@@ -327,8 +573,8 @@
                     <div style="font-size: 22px; font-weight: bold;">${c.name}</div>
                     <div style="font-size: 18px; margin: 5px 0;">${c.phone}</div>
                     <div id="qr-${c.id}" style="display: flex; justify-content: center; margin: 15px 0;"></div>
-                    ${c.district ? `<div style="font-size: 14px; margin-top: 5px;">الحي: ${c.district}</div>` : ''}
-                    <div style="font-size: 12px; margin-top: 10px;">* وجبة يومية - قاوم *</div>
+                    ${c.district ? `<div style="font-size: 14px; margin-top: 5px;">${translations[currentLang].labels.district}: ${c.district}</div>` : ''}
+                    <div style="font-size: 12px; margin-top: 10px;">* Qawim *</div>
                 `;
                 printArea.appendChild(item);
 
@@ -347,6 +593,7 @@
             if (!c) return;
             selectedCustomer = c;
 
+            const t = translations[currentLang];
             const menu = document.getElementById('actions-menu');
             const info = document.getElementById('menu-info');
             const btnPrint = document.getElementById('menu-print-one');
@@ -355,11 +602,18 @@
             const btnSecond = document.getElementById('menu-second');
             const btnThird = document.getElementById('menu-third');
 
+            document.getElementById('ui-actions-title').textContent = t.actionsTitle;
+            document.getElementById('ui-btn-close-actions').textContent = t.closeActions;
+
+            btnPrint.textContent = t.menu.printOne;
+            btnMinusDay.textContent = t.menu.minusDay;
+            btnPlusDay.textContent = t.menu.plusDay;
+
             if (typeof c.remainingDays === 'number') {
-                info.textContent = `أيام التوصيل المتبقية: ${c.remainingDays}`;
+                info.textContent = `${t.labels.remainingDays}: ${c.remainingDays}`;
                 info.classList.remove('hidden');
             } else if (typeof c.deliveryDays === 'number') {
-                info.textContent = `أيام التوصيل: ${c.deliveryDays}`;
+                info.textContent = `${t.labels.totalDays}: ${c.deliveryDays}`;
                 info.classList.remove('hidden');
             } else {
                 info.textContent = '';
@@ -371,7 +625,6 @@
                 window.closeActionsMenu();
             };
 
-            // خصم يوم يدوي
             btnMinusDay.onclick = async () => {
                 const currentRemaining =
                     typeof c.remainingDays === 'number'
@@ -393,7 +646,6 @@
                 window.closeActionsMenu();
             };
 
-            // إضافة يوم يدوي
             btnPlusDay.onclick = async () => {
                 const currentRemaining =
                     typeof c.remainingDays === 'number'
@@ -413,14 +665,14 @@
             btnThird.classList.add('hidden');
 
             if (c.status === 'active') {
-                btnSecond.textContent = 'إيقاف مؤقت';
+                btnSecond.textContent = t.menu.pause;
                 btnSecond.onclick = async () => {
                     await window.changeStatus(c.id, 'paused');
                     window.closeActionsMenu();
                 };
                 btnSecond.classList.remove('hidden');
 
-                btnThird.textContent = 'إنهاء الاشتراك';
+                btnThird.textContent = t.menu.end;
                 btnThird.onclick = async () => {
                     await window.changeStatus(c.id, 'expired');
                     window.closeActionsMenu();
@@ -428,14 +680,14 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'paused') {
-                btnSecond.textContent = 'تفعيل';
+                btnSecond.textContent = t.menu.resume;
                 btnSecond.onclick = async () => {
                     await window.changeStatus(c.id, 'active');
                     window.closeActionsMenu();
                 };
                 btnSecond.classList.remove('hidden');
 
-                btnThird.textContent = 'إنهاء الاشتراك';
+                btnThird.textContent = t.menu.end;
                 btnThird.onclick = async () => {
                     await window.changeStatus(c.id, 'expired');
                     window.closeActionsMenu();
@@ -443,7 +695,7 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'expired') {
-                btnSecond.textContent = 'تجديد الحساب';
+                btnSecond.textContent = t.menu.renew;
                 btnSecond.onclick = async () => {
                     let newRemaining = typeof c.deliveryDays === 'number' ? c.deliveryDays : null;
                     const updateData = {
@@ -484,6 +736,9 @@
 
         window.closeModal = () =>
             document.getElementById('modal').classList.add('hidden');
+
+        // تفعيل العربية كبداية
+        applyLanguage();
     </script>
 </body>
 </html>
