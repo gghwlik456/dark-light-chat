@@ -171,9 +171,16 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import {
+          getDatabase,
+          ref,
+          push,
+          set,
+          onValue,
+          update
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // ---------- الترجمة ----------
+        // ---------- الترجمة: نفس اللي كان في كودك بالضبط ----------
         const translations = {
           ar: {
             langLabel: 'عربي',
@@ -407,7 +414,7 @@
               plusDay: 'ایک دن بڑھائیں',
               pause: 'موقوف کریں',
               resume: 'فعال کریں',
-              end: 'سبسکرپশন ختم کریں',
+              end: 'سبسکرپشن ختم کریں',
               renew: 'سبسکرپشن ری نیو کریں',
             }
           }
@@ -448,7 +455,6 @@
           document.getElementById('menu-minus-day').textContent = t.menu.minusDay;
           document.getElementById('menu-plus-day').textContent = t.menu.plusDay;
 
-          // placeholders
           document.getElementById('cust-name').placeholder = t.placeholders.name;
           document.getElementById('cust-phone').placeholder = t.placeholders.phone;
           document.getElementById('cust-district').placeholder = t.placeholders.district;
@@ -460,7 +466,6 @@
           document.getElementById('ui-btn-renew-confirm').textContent = t.renewConfirm;
           document.getElementById('ui-btn-renew-cancel').textContent = t.renewCancel;
 
-          // نوع الاشتراك في الإضافة والتجديد
           const subSelect = document.getElementById('cust-sub-type');
           subSelect.options[0].text = t.subTypes.mixed_plus;
           subSelect.options[1].text = t.subTypes.mixed;
@@ -489,10 +494,11 @@
           window.closeLangModal();
         };
 
-        // ---------- Firebase والمنطق ----------
+        // ---------- Firebase Realtime Database ----------
         const firebaseConfig = {
             apiKey: "AIzaSyBxXXn9SCHhhx-Zu729uKtNUtt5QUWC1e4",
             authDomain: "qawim-41d04.firebaseapp.com",
+            databaseURL: "https://qawim-41d04-default-rtdb.firebaseio.com",
             projectId: "qawim-41d04",
             storageBucket: "qawim-41d04.firebasestorage.app",
             messagingSenderId: "1015259236420",
@@ -500,9 +506,8 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        let unsubscribe = null; 
+        const db = getDatabase(app);
+
         let currentListData = [];
         let currentStatusFilter = 'active';
         let selectedCustomer = null;
@@ -521,7 +526,7 @@
             return d.getDay() === 5;
         };
 
-        const maybeDecreaseDayForCustomer = async (customer) => {
+        const maybeDecreaseDayForCustomer = async (id, customer) => {
             if (customer.status !== 'active') return;
             if (typeof customer.deliveryDays !== 'number' || customer.deliveryDays <= 0) return;
 
@@ -535,7 +540,7 @@
                 : customer.deliveryDays;
 
             if (currentRemaining <= 0) {
-                await updateDoc(doc(db, "customers", customer.id), {
+                await update(ref(db, `customers/${id}`), {
                     remainingDays: 0,
                     status: 'expired'
                 });
@@ -545,13 +550,13 @@
             const newRemaining = currentRemaining - 1;
 
             if (newRemaining <= 0) {
-                await updateDoc(doc(db, "customers", customer.id), {
+                await update(ref(db, `customers/${id}`), {
                     remainingDays: 0,
                     status: 'expired',
                     lastDeliveryDate: today
                 });
             } else {
-                await updateDoc(doc(db, "customers", customer.id), {
+                await update(ref(db, `customers/${id}`), {
                     remainingDays: newRemaining,
                     lastDeliveryDate: today
                 });
@@ -563,32 +568,28 @@
 
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('list-page').classList.remove('hidden');
-            
+
             const t = translations[currentLang];
             document.getElementById('page-title').innerText = t.pageTitles[status];
 
             document.getElementById('add-btn').classList.toggle('hidden', status !== 'active');
             document.getElementById('print-btn').classList.toggle('hidden', status !== 'active');
 
-            if (unsubscribe) unsubscribe();
+            const customersRef = ref(db, 'customers');
 
-            const q = query(collection(db, "customers"), where("status", "==", status));
-            
-            unsubscribe = onSnapshot(q, async (snap) => {
+            onValue(customersRef, async (snap) => {
                 const table = document.getElementById('data-table');
                 table.innerHTML = '';
                 currentListData = [];
 
-                const customersArr = [];
-                snap.forEach(d => {
-                    const c = d.data();
-                    const id = d.id;
-                    customersArr.push({ id, ...c });
-                });
+                const allData = snap.val() || {};
+                const customersArr = Object.entries(allData)
+                  .filter(([id, c]) => c.status === status)
+                  .map(([id, c]) => ({ id, ...c }));
 
                 if (status === 'active') {
                     for (const c of customersArr) {
-                        await maybeDecreaseDayForCustomer(c);
+                        await maybeDecreaseDayForCustomer(c.id, c);
                     }
                 }
 
@@ -655,8 +656,11 @@
             if (!name || !phone) return alert(t.addCustomerAlert);
 
             const deliveryDays = daysStr ? Number(daysStr) : null;
-            
-            await addDoc(collection(db, "customers"), {
+
+            const customersRef = ref(db, 'customers');
+            const newRef = push(customersRef);
+
+            await set(newRef, {
                 name,
                 phone,
                 district,
@@ -665,7 +669,7 @@
                 deliveryDays,
                 remainingDays: deliveryDays,
                 status: 'active',
-                createdAt: new Date()
+                createdAt: new Date().toISOString()
             });
 
             window.closeModal();
@@ -678,17 +682,7 @@
         };
 
         window.changeStatus = async (id, newStatus) => {
-            await updateDoc(doc(db, "customers", id), { status: newStatus });
-        };
-
-        window.printLabels = () => {
-            const t = translations[currentLang];
-            if (currentListData.length === 0) return alert(t.noCustomersToPrint);
-            buildPrintArea(currentListData);
-        };
-
-        window.printSingleCustomer = (customer) => {
-            buildPrintArea([customer]);
+            await update(ref(db, `customers/${id}`), { status: newStatus });
         };
 
         const buildPrintArea = (list) => {
@@ -721,7 +715,16 @@
             setTimeout(() => { window.print(); }, 500);
         };
 
-        // تجديد
+        window.printLabels = () => {
+            const t = translations[currentLang];
+            if (currentListData.length === 0) return alert(t.noCustomersToPrint);
+            buildPrintArea(currentListData);
+        };
+
+        window.printSingleCustomer = (customer) => {
+            buildPrintArea([customer]);
+        };
+
         window.openRenewModal = (customer) => {
             renewCustomer = customer;
             const t = translations[currentLang];
@@ -752,21 +755,19 @@
 
             const newDays = Number(daysStr);
 
-            const updateData = {
+            await update(ref(db, `customers/${renewCustomer.id}`), {
                 status: 'active',
                 deliveryDays: newDays,
                 remainingDays: newDays,
                 subscriptionType: subType,
-                lastDeliveryDate: null,
-            };
-
-            await updateDoc(doc(db, "customers", renewCustomer.id), updateData);
+                lastDeliveryDate: null
+            });
 
             window.closeRenewModal();
             window.showPage('active');
         };
 
-                window.openActionsMenu = (id) => {
+        window.openActionsMenu = (id) => {
             const c = currentListData.find(x => x.id === id);
             if (!c) return;
             selectedCustomer = c;
@@ -819,7 +820,7 @@
                     updateData.status = 'expired';
                 }
 
-                await updateDoc(doc(db, "customers", c.id), updateData);
+                await update(ref(db, `customers/${c.id}`), updateData);
                 window.closeActionsMenu();
             };
 
@@ -832,7 +833,7 @@
 
                 const newRemaining = currentRemaining + 1;
 
-                await updateDoc(doc(db, "customers", c.id), {
+                await update(ref(db, `customers/${c.id}`), {
                     remainingDays: newRemaining
                 });
 
@@ -874,7 +875,6 @@
                 btnThird.classList.remove('hidden');
 
             } else if (c.status === 'expired') {
-                // هنا نستبدل التجديد القديم بفتح نافذة التجديد الجديدة
                 btnSecond.textContent = t.menu.renew;
                 btnSecond.onclick = () => {
                     window.openRenewModal(c);
@@ -892,7 +892,6 @@
         };
 
         window.goHome = () => {
-            if (unsubscribe) unsubscribe();
             document.getElementById('home-page').classList.remove('hidden');
             document.getElementById('list-page').classList.add('hidden');
         };
